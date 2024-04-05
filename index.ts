@@ -455,7 +455,7 @@ gltfLoader.load(
 
   },
   (xhr) => {
-    cp.value = (xhr.loaded) / (xhr.total) * 100
+    cp.value = (xhr.loaded) / 76807588 * 100
     if (cp.value == 100) {
       gsap.to(cp, {
         duration: 2,
