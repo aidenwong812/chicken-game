@@ -18,14 +18,6 @@ cp.style.top = '45%'
 cp.style.left = '47%'
 cp.style.position = 'absolute'
 document.body.append(cp)
-//navigate button
-// const navigate = document.createElement("img")
-// navigate.src = "navigation.png"
-// navigate.style.position = 'absolute'
-// navigate.style.width = "100px"
-// navigate.style.height = "100px"
-// navigate.style.bottom = "0%"
-// navigate.style.left = "47%"
 
 const text = document.createElement('p')
 text.style.fontSize = '36px'
@@ -57,14 +49,12 @@ const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('./draco/')
 const gltfLoader = new GLTFLoader();
 gltfLoader.crossOrigin = true;
-// gltfLoader.setDRACOLoader(dracoLoader)
+gltfLoader.setDRACOLoader(dracoLoader)
 let walking = true;
-let running = false;
 let walk
-let run
 let crash = false;
 gltfLoader.load(
-  'models/town.glb',
+  'models/map.glb',
   (gltf) => {
     let clicked = true // navigate click event
     const scene = new THREE.Scene()
@@ -76,7 +66,7 @@ gltfLoader.load(
       0.1,
       1000
     )
-    camera.position.set(30, 72, 100)
+    camera.position.set(0, 7, -2)
     scene.add(camera)
     var bgTexture = new THREE.TextureLoader().load("background.jpg")
     // bgTexture.mapping = THREE.EquirectangularReflectionMapping
@@ -140,41 +130,37 @@ gltfLoader.load(
     let lastAction: THREE.AnimationAction
 
     let mapModel = gltf.scene
-    mapModel.scale.set(2, 2, 2)
     scene.add(mapModel)
 
-    const normalMaterial = new THREE.MeshNormalMaterial()
     const video = document.createElement('video')
     video.src = 'video.mp4'
     video.crossOrigin = 'anonymous'
     video.loop = true
     // video.muted = false
-    if (!clicked) {
-      video.play()
-    }
+    video.play()
     const videoTexture = new THREE.VideoTexture(video)
     videoTexture.minFilter = THREE.LinearFilter
     videoTexture.wrapS = THREE.MirroredRepeatWrapping
     videoTexture.wrapT = THREE.MirroredRepeatWrapping
 
-    // let videoMesh1 = mapModel.getObjectByName("poster1")
-    // videoMesh1.material.map = videoTexture;
-    // videoMesh1.material.side = THREE.FrontSide;
-    // videoMesh1.material.needsUpdate = true;
-    // let videoMesh2 = mapModel.getObjectByName("poster2")
-    // videoMesh2.material.map = videoTexture;
-    // videoMesh2.material.side = THREE.FrontSide;
-    // videoMesh2.material.needsUpdate = true;
-    // let videoMesh3 = mapModel.getObjectByName("poster3")
-    // videoMesh3.material.map = videoTexture;
-    // videoMesh3.material.side = THREE.FrontSide;
-    // videoMesh3.material.needsUpdate = true;
-    // let videoMesh4 = mapModel.getObjectByName("poster4")
-    // videoMesh4.material.map = videoTexture;
-    // videoMesh4.material.side = THREE.DoubleSide;
-    // videoMesh4.material.needsUpdate = true;
-    // let alink = scene.getObjectByName("alink")
-    // alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    let videoMesh1 = mapModel.getObjectByName("poster1")
+    videoMesh1.material.map = videoTexture;
+    videoMesh1.material.side = THREE.FrontSide;
+    videoMesh1.material.needsUpdate = true;
+    let videoMesh2 = mapModel.getObjectByName("poster2")
+    videoMesh2.material.map = videoTexture;
+    videoMesh2.material.side = THREE.FrontSide;
+    videoMesh2.material.needsUpdate = true;
+    let videoMesh3 = mapModel.getObjectByName("poster3")
+    videoMesh3.material.map = videoTexture;
+    videoMesh3.material.side = THREE.FrontSide;
+    videoMesh3.material.needsUpdate = true;
+    let videoMesh4 = mapModel.getObjectByName("poster4")
+    videoMesh4.material.map = videoTexture;
+    videoMesh4.material.side = THREE.DoubleSide;
+    videoMesh4.material.needsUpdate = true;
+    let alink = scene.getObjectByName("alink")
+    alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
     gltf.scene.traverse(function (child) {
       if (child.isMesh) {
         child.castShadow = true;
@@ -198,9 +184,8 @@ gltfLoader.load(
       }
     })
     gltfLoader.load(
-      'models/chicken_walk.glb',
+      'models/chicken.glb',
       (gltf) => {
-        console.log(gltf)
         gltf.scene.traverse(function (child) {
           if (child.isMesh) {
             child.castShadow = true;
@@ -209,10 +194,32 @@ gltfLoader.load(
         })
         const avatar = gltf.scene
 
-        avatar.scale.set(1.5, 1.5, 1.5)
-        avatar.children[0].scale.set(0.05, 0.05, 0.05)
+        avatar.children[0].scale.set(0.1, 0.1, 0.1)
+        avatar.children[0].position.set(0, 1.72, 0)
         avatar.castShadow = true
         avatar.receiveShadow = true
+
+        gltfLoader.load(
+          'models/egg.glb',
+          (gltf) => {
+            gltf.scene.traverse(function (child) {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            })
+
+            const egg = gltf.scene
+            egg.children[0].scale.set(10, 10, 10)
+            egg.children[0].position.set(0, 0.3, 18)
+            scene.add(egg)
+
+            const anotherEgg = egg.clone()
+            anotherEgg.children[0].scale.set(10, 10, 10)
+            anotherEgg.children[0].position.set(0, 0.3, 38)
+            scene.add(anotherEgg)
+          })
+
         const orbitControls = new OrbitControls(camera, renderer.domElement)
         const inputVelocity = new THREE.Vector3()
         const velocity = new CANNON.Vec3()
@@ -224,31 +231,8 @@ gltfLoader.load(
         orbitControls.enabled = false
 
         mixer = new THREE.AnimationMixer(gltf.scene)
-        animationActions.push(mixer.clipAction(gltf.animations[0]))
-        gltfLoader.load(
-          'models/chicken_walk.glb',
-          (gltf) => {
-            gltf.scene.traverse(function (child) {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            })
-            animationActions.push(mixer.clipAction(gltf.animations[0]))
-            gltfLoader.load(
-              'models/chicken_walk.glb',
-              (gltf) => {
-                gltf.scene.traverse(function (child) {
-                  if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                  }
-                })
-                animationActions.push(mixer.clipAction(gltf.animations[0]))
-              }
-            )
-          }
-        )
+        animationActions.push(mixer.clipAction(gltf.animations[2]))
+        animationActions.push(mixer.clipAction(gltf.animations[1]))
 
         activeAction = animationActions[0]
         activeAction.loop = THREE.LoopRepeat
@@ -273,7 +257,7 @@ gltfLoader.load(
           colliderBody.angularFactor.set(0, 1, 0) // prevents rotation X,Z axis
           world.addBody(colliderBody)
 
-          gsap.to(camera.position, { x: 30, y: 100, z: 200, duration: 3 })
+          gsap.to(camera.position, { x: 0, y: 5, z: -20, duration: 2 })
         }
 
         const setAction = (toAction: THREE.AnimationAction, loop: Boolean) => {
@@ -305,37 +289,22 @@ gltfLoader.load(
             raycaster.setFromCamera(mouse, camera)
             const intersects = raycaster.intersectObjects(scene.children)
             if (intersects.length > 0) {
-              if (intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Rectangle009' || intersects[0].object.name == 'B_basis' || intersects[0].object.name == 'Rectangle010' || intersects[0].object.name == 'Rectangle015' || intersects[0].object.name == 'Rectangle001' || intersects[0].object.name == 'Rectangle025') {
+              if (intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Rectangle009' || intersects[0].object.name == 'B_basis' || intersects[0].object.name == 'Rectangle010' || intersects[0].object.name == 'Rectangle015' || intersects[0].object.name == 'Rectangle001' || intersects[0].object.name == 'Rectangle025' || intersects[0].object.name == "Object_2") {
                 //mouse pointer mesh
                 crash = false;
                 targetMesh = intersects[0]
 
                 if (walk)
                   walk.kill()
-                else if (run)
-                  run.kill()
                 distance = colliderBody.position.distanceTo(targetMesh.point)
-                if (distance > 20) {
-                  run = gsap.to(colliderBody.position, {
-                    x: targetMesh.point.x,
-                    // y: targetMesh.point.y,
-                    z: targetMesh.point.z,
-                    duration: distance / 6
-                  })
-                  running = true;
-                  walking = false;
-                }
-                else {
-                  walk = gsap.to(colliderBody.position, {
-                    x: targetMesh.point.x,
-                    // y: targetMesh.point.y,
-                    z: targetMesh.point.z,
-                    duration: distance / 2
-                  })
-                  running = false;
-                  walking = true;
-                }
 
+                walk = gsap.to(colliderBody.position, {
+                  x: targetMesh.point.x,
+                  // y: targetMesh.point.y,
+                  z: targetMesh.point.z,
+                  duration: distance / 2
+                })
+                walking = true;
 
                 //mouse pointer mesh
                 const ringGeometry = new THREE.RingGeometry(0.1, 0.2)
@@ -353,9 +322,7 @@ gltfLoader.load(
                   duration: 1,
                 })
               }
-              // if(intersects[0].object.name=='alink') {
-              //     window.open("https://example.com", "_blank")
-              // }
+              if (intersects[0].object.name === "") { }
             }
           }
 
@@ -374,66 +341,49 @@ gltfLoader.load(
         const clock = new THREE.Clock()
         let delta = 0
         let distance = 0
-        let distance1 = 0
 
         function animate() {
           requestAnimationFrame(animate)
-          // if (modelReady) {
-          //   const p = characterCollider.position
-          //   p.y -= 1
-          //   modelMesh.position.y = characterCollider.position.y
-          //   const rotationMatrix = new THREE.Matrix4()
-          //   distance1 = modelMesh.position.distanceTo(p)
-          //   if (targetMesh)
-          //     distance = colliderBody.position.distanceTo(targetMesh.point)
-          //   if (distance > 1) {
-          //     if (targetMesh && !crash) {
-          //       rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up)
-          //       targetQuaternion.setFromRotationMatrix(rotationMatrix)
-          //     }
-          //   }
-          //   if (!modelMesh.quaternion.equals(targetQuaternion)) {
-          //     modelMesh.quaternion.rotateTowards(targetQuaternion, delta * 10)
-          //   }
-          //   modelMesh.position.lerp(characterCollider.position, 0.1)
+          if (modelReady) {
+            const p = characterCollider.position
+            p.y -= 1
+            modelMesh.position.y = characterCollider.position.y
+            const rotationMatrix = new THREE.Matrix4()
+            if (targetMesh)
+              distance = colliderBody.position.distanceTo(targetMesh.point)
+            if (distance > 1) {
+              if (targetMesh && !crash) {
+                rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up)
+                targetQuaternion.setFromRotationMatrix(rotationMatrix)
+              }
+            }
+            if (!modelMesh.quaternion.equals(targetQuaternion)) {
+              modelMesh.quaternion.rotateTowards(targetQuaternion, delta * 10)
+            }
+            modelMesh.position.lerp(characterCollider.position, 0.1)
+          }
+          if (distance >= 1) {
+            setAction(animationActions[1], true)
+            mixer.update(delta)
+          }
+          else {
+            setAction(animationActions[0], true)
+            mixer.update(delta)
+          }
+          delta = Math.min(clock.getDelta(), 0.1)
+          world.step(delta)
 
-          // }
-          // if (distance >= 1) {
-          //   if (running) {
-          //     setAction(animationActions[2], true)
-          //     mixer.update(delta)
-          //   }
-          //   else {
-          //     setAction(animationActions[1], true)
-          //     // mixer.update(delta * distance1 * 2 )
-          //     mixer.update(delta)
-          //   }
-          // }
-          // else {
-          //   setAction(animationActions[0], true)
-          //   mixer.update(delta)
-          // }
-          // // velocity.set(inputVelocity.x, inputVelocity.y, inputVelocity.z)
-          // // colliderBody.position.x += inputVelocity.x
-          // // colliderBody.position.z += inputVelocity.z
-          // delta = Math.min(clock.getDelta(), 0.1)
-          // world.step(delta)
+          characterCollider.position.set(
+            colliderBody.position.x,
+            colliderBody.position.y,
+            colliderBody.position.z
+          )
 
-          // // cannonDebugRenderer.update()
-
-          // characterCollider.position.set(
-          //   colliderBody.position.x,
-          //   colliderBody.position.y,
-          //   colliderBody.position.z
-          // )
-
-          // orbitControls.update()
-          // if (video) {
-          //   videoTexture.needsUpdate = true
-          //   if (!clicked) {
-          //     video.play()
-          //   }
-          // }
+          orbitControls.update()
+          if (video) {
+            videoTexture.needsUpdate = true
+            video.play()
+          }
           render()
         }
 
@@ -442,22 +392,21 @@ gltfLoader.load(
             camera.lookAt(modelMesh.position.x, modelMesh.position.y, modelMesh.position.z)
           camera.updateProjectionMatrix()
           renderer.render(scene, camera)
+
         }
         colliderBody.addEventListener('collide', function (e: any) {
           crash = true;
           if (walk)
             walk.kill()
-          if (run)
-            run.kill()
         })
         animate()
         instructions.addEventListener('click', function () {
-          if (!clicked) {
+          if (clicked == false) {
             clicked = true
             gsap.to(camera.position, {
-              x: 30,
-              y: 80,
-              z: 200,
+              x: 0,
+              y: 40,
+              z: -50,
               duration: 4,
               onStart: () => {
                 orbitControls.enabled = false
@@ -474,11 +423,11 @@ gltfLoader.load(
           } else {
             clicked = false
             instructions.style.display = 'none';
-					  blocker.style.display = 'none';
+            blocker.style.display = 'none';
             gsap.to(camera.position, {
-              x: 30,
-              y: 71,
-              z: 100,
+              x: 0,
+              y: 7,
+              z: -2,
               duration: 4,
               onStart: () => {
                 orbitControls.enabled = false
