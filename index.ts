@@ -47,14 +47,14 @@ blocker.append(instructions)
 
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('./draco/')
-const gltfLoader = new GLTFLoader()
+const gltfLoader = new GLTFLoader();
 gltfLoader.crossOrigin = true;
 gltfLoader.setDRACOLoader(dracoLoader)
 let walking = true;
 let walk
 let crash = false;
 gltfLoader.load(
-  'models/town.glb',
+  'models/map.glb',
   (gltf) => {
     let clicked = true // navigate click event
     const scene = new THREE.Scene()
@@ -66,8 +66,7 @@ gltfLoader.load(
       0.1,
       1000
     )
-    camera.position.set(25, 8, 20)
-    console.log(camera)
+    camera.position.set(0, 7, -2)
     scene.add(camera)
     var bgTexture = new THREE.TextureLoader().load("background.jpg")
     // bgTexture.mapping = THREE.EquirectangularReflectionMapping
@@ -131,29 +130,57 @@ gltfLoader.load(
     let lastAction: THREE.AnimationAction
 
     let mapModel = gltf.scene
-    mapModel.scale.set(2, 2, 2)
-    mapModel.position.set(0, -100, 0)
     scene.add(mapModel)
 
+    const video = document.createElement('video')
+    video.src = 'video.mp4'
+    video.crossOrigin = 'anonymous'
+    video.loop = true
+    // video.muted = false
+    video.play()
+    const videoTexture = new THREE.VideoTexture(video)
+    videoTexture.minFilter = THREE.LinearFilter
+    videoTexture.wrapS = THREE.MirroredRepeatWrapping
+    videoTexture.wrapT = THREE.MirroredRepeatWrapping
+
+    let videoMesh1 = mapModel.getObjectByName("poster1")
+    videoMesh1.material.map = videoTexture;
+    videoMesh1.material.side = THREE.FrontSide;
+    videoMesh1.material.needsUpdate = true;
+    let videoMesh2 = mapModel.getObjectByName("poster2")
+    videoMesh2.material.map = videoTexture;
+    videoMesh2.material.side = THREE.FrontSide;
+    videoMesh2.material.needsUpdate = true;
+    let videoMesh3 = mapModel.getObjectByName("poster3")
+    videoMesh3.material.map = videoTexture;
+    videoMesh3.material.side = THREE.FrontSide;
+    videoMesh3.material.needsUpdate = true;
+    let videoMesh4 = mapModel.getObjectByName("poster4")
+    videoMesh4.material.map = videoTexture;
+    videoMesh4.material.side = THREE.DoubleSide;
+    videoMesh4.material.needsUpdate = true;
+    let alink = scene.getObjectByName("alink")
+    alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
     gltf.scene.traverse(function (child) {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+      }
+      if (child.name == 'Ground' || child.name == 'Rectangle009' || child.name == 'B_basis' || child.name == 'Rectangle010' || child.name == 'Rectangle015' || child.name == 'Rectangle001' || child.name == 'Rectangle025' || child.name == 'Rectangle019' || child.name == 'Rectangle032' || child.name == 'Rectangle029' || child.name == 'Rectangle026' || child.name == 'Rectangle027' || child.name == 'Rectangle008' || child.name == 'Rectangle003' || child.name == 'Rectangle012' || child.name == 'Rectangle011' || child.name == 'Rectangle019') {
+        let cityMesh: THREE.Object3D
+        const cityBody = new CANNON.Body({ mass: 0, material: groundMaterial })
+        cityMesh = child
+        const position = new THREE.Vector3()
+        cityMesh.getWorldPosition(position)
 
-        if (child.name.includes('SA_Env_Road')) {
-          let cityMesh: THREE.Object3D
-          const cityBody = new CANNON.Body({ mass: 0, material: groundMaterial })
-          cityMesh = child
-          const position = new THREE.Vector3()
-          cityMesh.getWorldPosition(position)
-  
-          const cityShape = CannonUtils.CreateTrimesh(
-            (cityMesh as THREE.Mesh).geometry
-          )
-          cityBody.position.set(position.x, position.y, position.z)
-          cityBody.addShape(cityShape)
-          world.addBody(cityBody)
-        }
+        const cityShape = CannonUtils.CreateTrimesh(
+          (cityMesh as THREE.Mesh).geometry
+        )
+        cityBody.position.x = position.x
+        cityBody.position.y = position.y
+        cityBody.position.z = position.z
+        cityBody.addShape(cityShape)
+        world.addBody(cityBody)
       }
     })
     gltfLoader.load(
@@ -167,8 +194,8 @@ gltfLoader.load(
         })
         const avatar = gltf.scene
 
-        avatar.children[0].scale.set(0.5, 0.5, 0.5)
-        avatar.children[0].position.set(20, 10, 0)
+        avatar.children[0].scale.set(0.1, 0.1, 0.1)
+        avatar.children[0].position.set(0, 1.72, 0)
         avatar.castShadow = true
         avatar.receiveShadow = true
 
@@ -181,20 +208,25 @@ gltfLoader.load(
                 child.receiveShadow = true;
               }
             })
+
             const egg = gltf.scene
-            egg.children[0].scale.set(30, 30, 30)
-            egg.children[0].position.set(38, 0.8, 18)
+            egg.children[0].scale.set(10, 10, 10)
+            egg.children[0].position.set(0, 0.3, 18)
             scene.add(egg)
+
             const anotherEgg = egg.clone()
-            anotherEgg.children[0].scale.set(30, 30, 30)
-            anotherEgg.children[0].position.set(38, 0.8, 38)
+            anotherEgg.children[0].scale.set(10, 10, 10)
+            anotherEgg.children[0].position.set(0, 0.3, 38)
             scene.add(anotherEgg)
           })
+
         const orbitControls = new OrbitControls(camera, renderer.domElement)
+        const inputVelocity = new THREE.Vector3()
+        const velocity = new CANNON.Vec3()
         orbitControls.enableDamping = true
         orbitControls.dampingFactor = 0.05
-        orbitControls.minAzimuthalAngle = Math.PI / 3
-        orbitControls.maxAzimuthalAngle = Math.PI / 3
+        orbitControls.minPolarAngle = Math.PI / 3
+        orbitControls.maxPolarAngle = Math.PI / 3
         orbitControls.enableZoom = false
         orbitControls.enabled = false
 
@@ -207,12 +239,11 @@ gltfLoader.load(
         activeAction.play()
         scene.add(avatar)
         modelMesh = gltf.scene
-        modelMesh.position.set(20, 0, 0)
         modelMesh.add(camera)
 
         const creatCollider = () => {
-          characterCollider.position.x = 20
-          characterCollider.position.y = 0
+          characterCollider.position.x = 0
+          characterCollider.position.y = 3
           characterCollider.position.z = 0
           scene.add(characterCollider)
           // colliderBody.addShape(colliderShape, new CANNON.Vec3(0, 0.5, 0))
@@ -226,7 +257,7 @@ gltfLoader.load(
           colliderBody.angularFactor.set(0, 1, 0) // prevents rotation X,Z axis
           world.addBody(colliderBody)
 
-          gsap.to(camera.position, { x: 25, y: 15, z: 60, duration: 2 })
+          gsap.to(camera.position, { x: 0, y: 5, z: -20, duration: 2 })
         }
 
         const setAction = (toAction: THREE.AnimationAction, loop: Boolean) => {
@@ -243,7 +274,6 @@ gltfLoader.load(
             }
           }
         }
-        
         modelReady = true
         creatCollider()
         const mouse = new THREE.Vector2()
@@ -259,7 +289,7 @@ gltfLoader.load(
             raycaster.setFromCamera(mouse, camera)
             const intersects = raycaster.intersectObjects(scene.children)
             if (intersects.length > 0) {
-              if (intersects[0].object.name.includes('SA_Env_Road')) {
+              if (intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Ground' || intersects[0].object.name == 'Rectangle009' || intersects[0].object.name == 'B_basis' || intersects[0].object.name == 'Rectangle010' || intersects[0].object.name == 'Rectangle015' || intersects[0].object.name == 'Rectangle001' || intersects[0].object.name == 'Rectangle025' || intersects[0].object.name == "Object_2") {
                 //mouse pointer mesh
                 crash = false;
                 targetMesh = intersects[0]
@@ -267,13 +297,12 @@ gltfLoader.load(
                 if (walk)
                   walk.kill()
                 distance = colliderBody.position.distanceTo(targetMesh.point)
-                console.log(colliderBody)
-                console.log(targetMesh)
+
                 walk = gsap.to(colliderBody.position, {
                   x: targetMesh.point.x,
                   // y: targetMesh.point.y,
                   z: targetMesh.point.z,
-                  duration: distance / 1
+                  duration: distance / 2
                 })
                 walking = true;
 
@@ -293,6 +322,7 @@ gltfLoader.load(
                   duration: 1,
                 })
               }
+              if (intersects[0].object.name === "") { }
             }
           }
 
@@ -328,11 +358,10 @@ gltfLoader.load(
               }
             }
             if (!modelMesh.quaternion.equals(targetQuaternion)) {
-              modelMesh.quaternion.rotateTowards(targetQuaternion, delta * 1)
+              modelMesh.quaternion.rotateTowards(targetQuaternion, delta * 10)
             }
             modelMesh.position.lerp(characterCollider.position, 0.1)
           }
-          
           if (distance >= 1) {
             setAction(animationActions[1], true)
             mixer.update(delta)
@@ -341,11 +370,8 @@ gltfLoader.load(
             setAction(animationActions[0], true)
             mixer.update(delta)
           }
-          
           delta = Math.min(clock.getDelta(), 0.1)
-          if (delta > 0) {
-            world.step(delta)
-          }
+          world.step(delta)
 
           characterCollider.position.set(
             colliderBody.position.x,
@@ -354,6 +380,10 @@ gltfLoader.load(
           )
 
           orbitControls.update()
+          if (video) {
+            videoTexture.needsUpdate = true
+            video.play()
+          }
           render()
         }
 
@@ -362,25 +392,42 @@ gltfLoader.load(
             camera.lookAt(modelMesh.position.x, modelMesh.position.y, modelMesh.position.z)
           camera.updateProjectionMatrix()
           renderer.render(scene, camera)
+
         }
-        
         colliderBody.addEventListener('collide', function (e: any) {
           crash = true;
           if (walk)
             walk.kill()
         })
-        
         animate()
-        
         instructions.addEventListener('click', function () {
-          if (clicked) {
+          if (clicked == false) {
+            clicked = true
+            gsap.to(camera.position, {
+              x: 0,
+              y: 40,
+              z: -50,
+              duration: 4,
+              onStart: () => {
+                orbitControls.enabled = false
+              },
+              onUpdate: () => {
+                orbitControls.enabled = false
+              },
+              onComplete: () => {
+                orbitControls.enabled = true
+                orbitControls.autoRotate = true
+              },
+            })
+
+          } else {
             clicked = false
             instructions.style.display = 'none';
             blocker.style.display = 'none';
             gsap.to(camera.position, {
-              x: 25,
-              y: 8,
-              z: 20,
+              x: 0,
+              y: 7,
+              z: -2,
               duration: 4,
               onStart: () => {
                 orbitControls.enabled = false
@@ -394,6 +441,7 @@ gltfLoader.load(
               },
             })
           }
+
         })
 
       },
