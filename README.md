@@ -1,5 +1,4 @@
-# Character Walk
-You can walk through Singapore, Singapore.
+# Chicken Game
 
 ## Setup
 Download [Node.js](https://nodejs.org/en/download/).
