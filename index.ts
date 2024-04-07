@@ -576,10 +576,6 @@ gltfLoader.load(
             mixer.update(delta);
           }
 
-          if (npcMixer) {
-            npcMixer[0].update(delta);
-          }
-
           if (npcMixer.length > 0) {
             npcMixer.forEach((one) => one.update(delta));
           }
@@ -651,7 +647,7 @@ gltfLoader.load(
               plusText.style.top = "50px";
               plusText.style.left = "calc(100% - 50px)";
               plusText.style.visibility = "hidden";
-            }, 200);
+            }, 500);
 
             setTimeout(function () {
               plusText.style.top = "50%";
