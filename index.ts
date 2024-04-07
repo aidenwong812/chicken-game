@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import * as CANNON from 'cannon-es'
 import gsap from 'gsap'
 import CircleProgress from 'js-circle-progress'
@@ -24,7 +25,7 @@ const text = document.createElement('p')
 text.style.fontSize = '36px'
 text.style.color = 'white'
 text.style.fontFamily = 'Monospace'
-text.append('Click to play')
+text.innerHTML = 'Click to play'
 
 const instructions = document.createElement('div')
 instructions.style.width = '100%'
@@ -74,7 +75,7 @@ scoreBoard.style.fontFamily = 'Monospace'
 scoreBoard.append(scoreLabel)
 scoreBoard.append(score)
 
-var plusText = document.createElement('img');
+const plusText = document.createElement('img');
 plusText.style.position = 'absolute';
 //plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
 plusText.style.width = '100px';
@@ -222,6 +223,14 @@ gltfLoader.load(
     eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
     eggBody.linearDamping = 0.95
 
+    let npc
+    const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+    const npcShape = new CANNON.Sphere(0.5)
+    npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+    npcBody.linearDamping = 0.95
+
+    let npcBodies: Array<any> = []
+
     gltfLoader.load(
       'models/egg.glb',
       (gltf) => {
@@ -231,10 +240,6 @@ gltfLoader.load(
             child.receiveShadow = true;
           }
         })
-
-        const road = positions[Math.floor(Math.random() * 5)]
-        const positionX = Math.random() * (road.x2 - road.x1) + road.x1
-        const positionZ = Math.random() * (road.z2 - road.z1) + road.z1
 
         egg = gltf.scene
         egg.children[0].scale.set(10, 10, 10)
@@ -255,7 +260,8 @@ gltfLoader.load(
     const colliderBody = new CANNON.Body({ mass: 1, material: slipperyMaterial })
 
     let mixer: THREE.AnimationMixer
-    let npcMixer: THREE.AnimationMixer
+    let npcMixer: Array<THREE.AnimationMixer> = []
+    const npcs: Array<any> = []
     let modelReady = false
     let modelMesh: THREE.Object3D
     let targetMesh: THREE.Object3D
@@ -319,11 +325,6 @@ gltfLoader.load(
       }
     })
 
-    // const scorePosition = new THREE.AxesHelper(20);
-    // // characterCollider.add(scorePosition)
-    // scene.add(scorePosition);
-    // scorePosition.position.set(0, 0, 0);
-
     gltfLoader.load(
       'models/npc.glb',
       (gltf) => {
@@ -333,18 +334,40 @@ gltfLoader.load(
             child.receiveShadow = true;
           }
         })
-        const npc = gltf.scene
+
+        npc = gltf.scene
         npc.children[0].scale.set(1, 1, 1)
-        npc.children[0].position.set(0, 0, 30)
-        npc.castShadow = true
-        npc.receiveShadow = true
-
-        // npcMixer = new THREE.AnimationMixer(gltf.scene)
-        // const action = npcMixer.clipAction(gltf.animations[0])
-        // action.play()
-        console.log(npc)
-
+        npc.children[0].position.set(0, 0, 38)
+        npc.children[0].rotation.x = Math.PI * 2
+        npc.children[0].rotation.y = Math.PI
+        npcBody.position.set(0, 0, 38)
         scene.add(npc)
+        world.addBody(npcBody)
+
+        // for (let i = 0; i < 10; i++) {
+        //   const road = positions[Math.floor(Math.random() * 5)]
+        //   const newX = Math.random() * (road.x2 - road.x1) + road.x1
+        //   const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+
+        //   const cloneNpc = SkeletonUtils.clone(npc)
+        //   cloneNpc.children[0].scale.set(1, 1, 1)
+        //   cloneNpc.children[0].position.set(newX, 0, newZ)
+        //   cloneNpc.rotation.x = Math.PI * 2
+        //   cloneNpc.rotation.y = Math.PI
+
+        //   const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+        //   const npcShape = new CANNON.Sphere(0.6)
+        //   npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+        //   npcBody.linearDamping = 0.95
+        //   npcBody.position.set(newX, 0, newZ)          
+
+        //   scene.add(cloneNpc)
+        //   world.addBody(npcBody)
+
+        //   npcs.push(cloneNpc)
+        //   npcBodies.push(npcBody)
+
+        // }
       }
     )
 
@@ -417,7 +440,9 @@ gltfLoader.load(
           }
         }
         modelReady = true
+
         creatCollider()
+
         const mouse = new THREE.Vector2()
 
         renderer.domElement.addEventListener('mousedown', (event) => {
@@ -516,6 +541,7 @@ gltfLoader.load(
             }
             modelMesh.position.lerp(characterCollider.position, 0.1)
           }
+
           if (distance >= 1) {
             setAction(animationActions[1], true)
             mixer.update(delta)
@@ -524,9 +550,21 @@ gltfLoader.load(
             setAction(animationActions[0], true)
             mixer.update(delta)
           }
+          
           if (npcMixer) {
             npcMixer.update(delta)
           }
+
+          if (npcMixer.length > 0) {
+            npcMixer.forEach(one => one.update(delta))
+          }
+
+          if (npcs.length > 0) {
+            npcs.forEach(one => {
+              one.position.set(one.position.x, one.position.y, one.position.z - 2.5 * delta)
+            })
+          }
+
           delta = Math.min(clock.getDelta(), 0.1)
           world.step(delta)
 
@@ -553,32 +591,26 @@ gltfLoader.load(
           renderer.render(scene, camera)
 
         }
+
         colliderBody.addEventListener('collide', function (e: any) {
           console.log('colliderBody collided with body:', e.contact.bj.id);
           crash = true;
           if (walk)
             walk.kill()
           if (e.contact.bj.id === 0) {
-            world.removeBody(eggBody);
-            console.log("cameraPosition: ", camera.position);
-            // console.log("scorePosition: ", scorePosition.position);
-            console.log("collectorPosition: ", colliderBody.position);                        
+            world.removeBody(eggBody);                
             
             const road = positions[Math.floor(Math.random() * 5)]
             const newX = Math.random() * (road.x2 - road.x1) + road.x1
             const newZ = Math.random() * (road.z2 - road.z1) + road.z1
-
-            console.log("newX, newZ: ", newX, newZ)
             
             egg.children[0].position.set(newX, 0.3, newZ)
             eggBody.position.set(newX, 10, newZ)
-            eggBody.velocity.set(0, 0, 0);
 
             // Add back to world after a delay
             setTimeout(() => {
               world.addBody(eggBody);
             }, 1000);
-            console.log("World: ", world)
 
             plusText.style.top = '33%';
             plusText.style.visibility = 'visible';
@@ -594,9 +626,24 @@ gltfLoader.load(
               plusText.style.top = '50%';
               plusText.style.left = '50%';
             }, 1500)
+            
+            count += 1;
+            score.innerHTML = count.toString()
+          }
+          if (e.contact.bj.id === 1) {
+            count = 0;
+            score.innerHTML = count.toString()
+            text.innerHTML = 'Game Over'
+            instructions.style.display = 'flex'
+            blocker.style.display = 'block'
+            avatar.position.set(0, 1.72, 0)
+            characterCollider.position.set(0, 3, 0)
+            colliderBody.position.set(0, 3, 0)
           }
         })
+
         animate()
+
         instructions.addEventListener('click', function () {
           if (clicked == false) {
             clicked = true
