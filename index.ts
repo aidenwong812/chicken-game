@@ -2,11 +2,13 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import * as CANNON from 'cannon-es'
 import gsap from 'gsap'
 import CircleProgress from 'js-circle-progress'
 import CannonUtils from './cannonUtils'
-import CannonDebugRenderer from './cannonDebugRenderer'
 //circle progress bar
 const cp = new CircleProgress({
   min: 0,
@@ -23,7 +25,7 @@ const text = document.createElement('p')
 text.style.fontSize = '36px'
 text.style.color = 'white'
 text.style.fontFamily = 'Monospace'
-text.append('Click to play')
+text.innerHTML = 'Click to play'
 
 const instructions = document.createElement('div')
 instructions.style.width = '100%'
@@ -42,8 +44,34 @@ blocker.style.width = '100%'
 blocker.style.height = '100%'
 blocker.style.top = '0px'
 blocker.style.left = '0px'
-blocker.style.backgroundColor = 'rgba(0,0,0,0.5)';
+blocker.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
 blocker.append(instructions)
+
+const scoreLabel = document.createElement('p')
+scoreLabel.append('Score:\t')
+
+const score = document.createElement('p')
+score.append('0')
+
+const scoreBoard = document.createElement('div')
+scoreBoard.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+scoreBoard.style.position = 'fixed'
+scoreBoard.style.top = '0px'
+scoreBoard.style.right = '0px'
+scoreBoard.style.display = 'flex'
+scoreBoard.style.justifyContent = 'center'
+scoreBoard.style.alignItems = 'center'
+scoreBoard.style.gap = '10px'
+scoreBoard.style.height = '100px'
+scoreBoard.style.width = '200px'
+scoreBoard.style.border = '1px solid gray'
+scoreBoard.style.textAlign = 'center'
+scoreBoard.style.pointerEvents = 'none'
+scoreBoard.style.fontSize = '24px'
+scoreBoard.style.color = 'white'
+scoreBoard.style.fontFamily = 'Monospace'
+scoreBoard.append(scoreLabel)
+scoreBoard.append(score)
 
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('./draco/')
@@ -53,6 +81,67 @@ gltfLoader.setDRACOLoader(dracoLoader)
 let walking = true;
 let walk
 let crash = false;
+
+const positions = [
+  {
+    x1: -1.5,
+    x2: -1.5,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: 63,
+    x2: 67,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: -63,
+    x2: -67,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: 74,
+    z2: 81,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: -1,
+    z2: 1,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: -74,
+    z2: -81,
+  },
+]
+
+const height = 0.1,
+  size = 0.8,
+
+  curveSegments = 4,
+
+  bevelThickness = 0.02,
+  bevelSize = 0.015
+
+let font
+
+function loadFont() {
+
+  const loader = new FontLoader();
+  loader.load('fonts/optimer_bold' + '.typeface.json', function (response) {
+
+    font = response;
+
+  });
+
+}
+
 gltfLoader.load(
   'models/map.glb',
   (gltf) => {
@@ -113,6 +202,42 @@ gltfLoader.load(
         contactEquationRelaxation: 3,
       }
     )
+
+    let egg;
+    let eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+    const eggShape = new CANNON.Sphere(0.2)
+    eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
+    eggBody.linearDamping = 0.95
+
+    let npc
+    const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+    const npcShape = new CANNON.Sphere(0.5)
+    npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+    npcBody.linearDamping = 0.95
+
+    let npcBodies: Array<any> = []
+
+    gltfLoader.load(
+      'models/egg.glb',
+      (gltf) => {
+        gltf.scene.traverse(function (child) {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        })
+
+        egg = gltf.scene
+        egg.children[0].scale.set(10, 10, 10)
+        egg.children[0].position.set(0, 0.3, 18)
+        scene.add(egg)
+
+        eggBody.position.set(0, 0.3, 18);
+        world.addBody(eggBody);
+      })
+
+    let count = 0;
+
     world.addContactMaterial(slippery_ground_cm)
       ; (world.solver as CANNON.GSSolver).iterations = 10
     // Character Collider
@@ -121,6 +246,8 @@ gltfLoader.load(
     const colliderBody = new CANNON.Body({ mass: 1, material: slipperyMaterial })
 
     let mixer: THREE.AnimationMixer
+    let npcMixer: Array<THREE.AnimationMixer> = []
+    const npcs: Array<any> = []
     let modelReady = false
     let modelMesh: THREE.Object3D
     let targetMesh: THREE.Object3D
@@ -183,6 +310,53 @@ gltfLoader.load(
         world.addBody(cityBody)
       }
     })
+
+    gltfLoader.load(
+      'models/npc.glb',
+      (gltf) => {
+        gltf.scene.traverse(function (child) {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        })
+
+        npc = gltf.scene
+        npc.children[0].scale.set(1, 1, 1)
+        npc.children[0].position.set(0, 0, 38)
+        npc.children[0].rotation.x = Math.PI * 2
+        npc.children[0].rotation.y = Math.PI
+        npcBody.position.set(0, 0, 38)
+        scene.add(npc)
+        world.addBody(npcBody)
+
+        // for (let i = 0; i < 10; i++) {
+        //   const road = positions[Math.floor(Math.random() * 5)]
+        //   const newX = Math.random() * (road.x2 - road.x1) + road.x1
+        //   const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+
+        //   const cloneNpc = SkeletonUtils.clone(npc)
+        //   cloneNpc.children[0].scale.set(1, 1, 1)
+        //   cloneNpc.children[0].position.set(newX, 0, newZ)
+        //   cloneNpc.rotation.x = Math.PI * 2
+        //   cloneNpc.rotation.y = Math.PI
+
+        //   const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+        //   const npcShape = new CANNON.Sphere(0.6)
+        //   npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+        //   npcBody.linearDamping = 0.95
+        //   npcBody.position.set(newX, 0, newZ)          
+
+        //   scene.add(cloneNpc)
+        //   world.addBody(npcBody)
+
+        //   npcs.push(cloneNpc)
+        //   npcBodies.push(npcBody)
+
+        // }
+      }
+    )
+
     gltfLoader.load(
       'models/chicken.glb',
       (gltf) => {
@@ -199,30 +373,7 @@ gltfLoader.load(
         avatar.castShadow = true
         avatar.receiveShadow = true
 
-        gltfLoader.load(
-          'models/egg.glb',
-          (gltf) => {
-            gltf.scene.traverse(function (child) {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            })
-
-            const egg = gltf.scene
-            egg.children[0].scale.set(10, 10, 10)
-            egg.children[0].position.set(0, 0.3, 18)
-            scene.add(egg)
-
-            const anotherEgg = egg.clone()
-            anotherEgg.children[0].scale.set(10, 10, 10)
-            anotherEgg.children[0].position.set(0, 0.3, 38)
-            scene.add(anotherEgg)
-          })
-
         const orbitControls = new OrbitControls(camera, renderer.domElement)
-        const inputVelocity = new THREE.Vector3()
-        const velocity = new CANNON.Vec3()
         orbitControls.enableDamping = true
         orbitControls.dampingFactor = 0.05
         orbitControls.minPolarAngle = Math.PI / 3
@@ -275,7 +426,9 @@ gltfLoader.load(
           }
         }
         modelReady = true
+
         creatCollider()
+
         const mouse = new THREE.Vector2()
 
         renderer.domElement.addEventListener('mousedown', (event) => {
@@ -362,6 +515,7 @@ gltfLoader.load(
             }
             modelMesh.position.lerp(characterCollider.position, 0.1)
           }
+
           if (distance >= 1) {
             setAction(animationActions[1], true)
             mixer.update(delta)
@@ -370,6 +524,17 @@ gltfLoader.load(
             setAction(animationActions[0], true)
             mixer.update(delta)
           }
+
+          if (npcMixer.length > 0) {
+            npcMixer.forEach(one => one.update(delta))
+          }
+
+          if (npcs.length > 0) {
+            npcs.forEach(one => {
+              one.position.set(one.position.x, one.position.y, one.position.z - 2.5 * delta)
+            })
+          }
+
           delta = Math.min(clock.getDelta(), 0.1)
           world.step(delta)
 
@@ -394,12 +559,90 @@ gltfLoader.load(
           renderer.render(scene, camera)
 
         }
+
         colliderBody.addEventListener('collide', function (e: any) {
+          console.log(e.contact.bj.id)
+          console.log('here')
           crash = true;
           if (walk)
             walk.kill()
+          if (e.contact.bj.id === 0) {
+            world.removeBody(eggBody)
+
+            const road = positions[Math.floor(Math.random() * 5)]
+            const newX = Math.random() * (road.x2 - road.x1) + road.x1
+            const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+            egg.children[0].position.set(newX, 0.3, newZ)
+            eggBody.position.set(newX, 10, newZ)
+
+            setTimeout(() => {
+              world.addBody(eggBody)
+            }, 2000)
+
+            const textGeo = new TextGeometry('+1', {
+              font: font,
+              size: size,
+              height: height,
+              curveSegments: curveSegments,
+
+              bevelThickness: bevelThickness,
+              bevelSize: bevelSize,
+              bevelEnabled: true
+            });
+
+            textGeo.computeBoundingBox();
+
+            const textMaterial = new THREE.MeshPhongMaterial({ color: 0x60a3e0 });
+
+            const textMesh = new THREE.Mesh(textGeo, textMaterial);
+
+            textMesh.position.x = colliderBody.position.x + 0.8;
+            textMesh.position.y = colliderBody.position.y + 0.1;
+            textMesh.position.z = colliderBody.position.z + 1;
+
+            const vector = new THREE.Vector3();
+            camera.getWorldPosition(vector);
+            textMesh.lookAt(vector);
+
+            scene.add(textMesh);
+
+            gsap.to(textMesh.position, {
+              x: colliderBody.position.x + 0.8,
+              y: colliderBody.position.y + 0.6,
+              z: colliderBody.position.z + 1,
+              duration: 0.5,
+              onComplete: () => {
+                gsap.to(textMesh.position, {
+                  x: -20,
+                  y: 10,
+                  z: textMesh.position.z,
+                  duration: 5,
+                })
+                gsap.to(textMesh.scale, {
+                  x: 0,
+                  y: 0,
+                  z: 0,
+                  duration: 1.5,
+                })
+                count += 1;
+                score.innerHTML = count.toString()
+              }
+            })
+          }
+          if (e.contact.bj.id === 1) {
+            count = 0;
+            score.innerHTML = count.toString()
+            text.innerHTML = 'Game Over'
+            instructions.style.display = 'flex'
+            blocker.style.display = 'block'
+            avatar.position.set(0, 1.72, 0)
+            characterCollider.position.set(0, 3, 0)
+            colliderBody.position.set(0, 3, 0)
+          }
         })
+
         animate()
+
         instructions.addEventListener('click', function () {
           if (clicked == false) {
             clicked = true
@@ -422,8 +665,9 @@ gltfLoader.load(
 
           } else {
             clicked = false
-            instructions.style.display = 'none';
-            blocker.style.display = 'none';
+            instructions.style.display = 'none'
+            blocker.style.display = 'none'
+            document.body.appendChild(scoreBoard)
             gsap.to(camera.position, {
               x: 0,
               y: 7,
@@ -463,6 +707,7 @@ gltfLoader.load(
         onComplete: () => {
           cp.remove()
           document.body.append(blocker)
+          loadFont()
         }
       })
     }
