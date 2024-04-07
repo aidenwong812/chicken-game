@@ -47,8 +47,10 @@ blocker.style.left = '0px'
 blocker.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
 blocker.append(instructions)
 
-const scoreLabel = document.createElement('p')
-scoreLabel.append('Score:\t')
+const scoreLabel = document.createElement('img')
+scoreLabel.src = '/score.gif'
+scoreLabel.style.paddingBottom = '8px'
+scoreLabel.width = 100
 
 const score = document.createElement('p')
 score.append('0')
@@ -72,6 +74,18 @@ scoreBoard.style.color = 'white'
 scoreBoard.style.fontFamily = 'Monospace'
 scoreBoard.append(scoreLabel)
 scoreBoard.append(score)
+
+const plusText = document.createElement('img');
+plusText.style.position = 'absolute';
+//plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+plusText.style.width = '100px';
+plusText.src = "/plus.png";
+plusText.style.top = '40%';
+plusText.style.left = '50%';
+plusText.style.transform = 'translate(-50%, -50%)';
+plusText.style.visibility = 'hidden';
+plusText.style.transition = 'all 0.5s ease';
+document.body.appendChild(plusText);
 
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('./draco/')
@@ -104,7 +118,7 @@ const positions = [
   {
     x1: -67,
     x2: 67,
-    z1: 74,
+    z1: 77,
     z2: 81,
   },
   {
@@ -116,7 +130,7 @@ const positions = [
   {
     x1: -67,
     x2: 67,
-    z1: -74,
+    z1: -77,
     z2: -81,
   },
 ]
@@ -481,6 +495,17 @@ gltfLoader.load(
 
         })
 
+        window.addEventListener('wheel', (event) => {
+          event.preventDefault();
+          
+          // Adjust the camera's zoom based on the deltaY value of the event
+          camera.position.z += event.deltaY * 0.05;
+          if (camera.position.z > 10 ) camera.position.z = 10
+          else if (camera.position.z < -10 ) camera.position.z = -10
+          console.log("camera.position.z :", camera.position.z, event.deltaY)
+          render(); // Make sure to call render to update the scene after adjusting the zoom
+        });
+
         window.addEventListener('resize', onWindowResize, false)
 
         function onWindowResize() {
@@ -494,6 +519,7 @@ gltfLoader.load(
         const clock = new THREE.Clock()
         let delta = 0
         let distance = 0
+        let textMesh
 
         function animate() {
           requestAnimationFrame(animate)
@@ -524,6 +550,10 @@ gltfLoader.load(
             setAction(animationActions[0], true)
             mixer.update(delta)
           }
+          
+          if (npcMixer) {
+            npcMixer.update(delta)
+          }
 
           if (npcMixer.length > 0) {
             npcMixer.forEach(one => one.update(delta))
@@ -553,81 +583,52 @@ gltfLoader.load(
         }
 
         function render() {
-          if (!clicked)
+          if (!clicked) {
             camera.lookAt(modelMesh.position.x, modelMesh.position.y, modelMesh.position.z)
+          }
+
           camera.updateProjectionMatrix()
           renderer.render(scene, camera)
 
         }
 
         colliderBody.addEventListener('collide', function (e: any) {
-          console.log(e.contact.bj.id)
-          console.log('here')
+          console.log('colliderBody collided with body:', e.contact.bj.id);
           crash = true;
           if (walk)
             walk.kill()
           if (e.contact.bj.id === 0) {
-            world.removeBody(eggBody)
-
+            world.removeBody(eggBody);                
+            
             const road = positions[Math.floor(Math.random() * 5)]
             const newX = Math.random() * (road.x2 - road.x1) + road.x1
             const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+            
             egg.children[0].position.set(newX, 0.3, newZ)
             eggBody.position.set(newX, 10, newZ)
 
+            // Add back to world after a delay
             setTimeout(() => {
-              world.addBody(eggBody)
-            }, 2000)
+              world.addBody(eggBody);
+            }, 1000);
 
-            const textGeo = new TextGeometry('+1', {
-              font: font,
-              size: size,
-              height: height,
-              curveSegments: curveSegments,
+            plusText.style.top = '33%';
+            plusText.style.visibility = 'visible';
 
-              bevelThickness: bevelThickness,
-              bevelSize: bevelSize,
-              bevelEnabled: true
-            });
+            // Move to the right top corner and disappear gradually after 2s
+            setTimeout(function() {
+              plusText.style.top = '50px';
+              plusText.style.left = 'calc(100% - 50px)';
+              plusText.style.visibility = "hidden";
+            }, 200);
 
-            textGeo.computeBoundingBox();
-
-            const textMaterial = new THREE.MeshPhongMaterial({ color: 0x60a3e0 });
-
-            const textMesh = new THREE.Mesh(textGeo, textMaterial);
-
-            textMesh.position.x = colliderBody.position.x + 0.8;
-            textMesh.position.y = colliderBody.position.y + 0.1;
-            textMesh.position.z = colliderBody.position.z + 1;
-
-            const vector = new THREE.Vector3();
-            camera.getWorldPosition(vector);
-            textMesh.lookAt(vector);
-
-            scene.add(textMesh);
-
-            gsap.to(textMesh.position, {
-              x: colliderBody.position.x + 0.8,
-              y: colliderBody.position.y + 0.6,
-              z: colliderBody.position.z + 1,
-              duration: 0.5,
-              onComplete: () => {
-                gsap.to(textMesh.position, {
-                  x: -20,
-                  y: 10,
-                  z: textMesh.position.z,
-                  duration: 5,
-                })
-                gsap.to(textMesh.scale, {
-                  x: 0,
-                  y: 0,
-                  z: 0,
-                  duration: 1.5,
-                })
-                count += 1;
-                score.innerHTML = count.toString()
-              }
-            })
+            setTimeout(function() {
+              plusText.style.top = '50%';
+              plusText.style.left = '50%';
+            }, 1500)
+            
+            count += 1;
+            score.innerHTML = count.toString()
           }
           if (e.contact.bj.id === 1) {
             count = 0;
@@ -696,7 +697,7 @@ gltfLoader.load(
         console.log(error)
       }
     )
-
+    console.log("Camera.position: ", camera.position)
   },
   (xhr) => {
     cp.value = (xhr.loaded) / 76807588 * 100
