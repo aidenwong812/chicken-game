@@ -2,11 +2,12 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import * as CANNON from 'cannon-es'
 import gsap from 'gsap'
 import CircleProgress from 'js-circle-progress'
 import CannonUtils from './cannonUtils'
-import CannonDebugRenderer from './cannonDebugRenderer'
 //circle progress bar
 const cp = new CircleProgress({
   min: 0,
@@ -42,8 +43,48 @@ blocker.style.width = '100%'
 blocker.style.height = '100%'
 blocker.style.top = '0px'
 blocker.style.left = '0px'
-blocker.style.backgroundColor = 'rgba(0,0,0,0.5)';
+blocker.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
 blocker.append(instructions)
+
+const scoreLabel = document.createElement('img')
+scoreLabel.src = '/score.gif'
+scoreLabel.style.paddingBottom = '8px'
+scoreLabel.width = 100
+
+const score = document.createElement('p')
+score.append('0')
+
+const scoreBoard = document.createElement('div')
+scoreBoard.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+scoreBoard.style.position = 'fixed'
+scoreBoard.style.top = '0px'
+scoreBoard.style.right = '0px'
+scoreBoard.style.display = 'flex'
+scoreBoard.style.justifyContent = 'center'
+scoreBoard.style.alignItems = 'center'
+scoreBoard.style.gap = '10px'
+scoreBoard.style.height = '100px'
+scoreBoard.style.width = '200px'
+scoreBoard.style.border = '1px solid gray'
+scoreBoard.style.textAlign = 'center'
+scoreBoard.style.pointerEvents = 'none'
+scoreBoard.style.fontSize = '24px'
+scoreBoard.style.color = 'white'
+scoreBoard.style.fontFamily = 'Monospace'
+scoreBoard.append(scoreLabel)
+scoreBoard.append(score)
+
+var plusText = document.createElement('img');
+plusText.style.position = 'absolute';
+//plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+plusText.style.width = '100px';
+plusText.src = "/plus.png";
+plusText.style.top = '40%';
+plusText.style.left = '50%';
+plusText.style.transform = 'translate(-50%, -50%)';
+plusText.style.visibility = 'hidden';
+plusText.style.transition = 'all 0.5s ease';
+document.body.appendChild(plusText);
 
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('./draco/')
@@ -53,6 +94,67 @@ gltfLoader.setDRACOLoader(dracoLoader)
 let walking = true;
 let walk
 let crash = false;
+
+const positions = [
+  {
+    x1: -1.5,
+    x2: -1.5,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: 63,
+    x2: 67,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: -63,
+    x2: -67,
+    z1: -81,
+    z2: 81,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: 77,
+    z2: 81,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: -1,
+    z2: 1,
+  },
+  {
+    x1: -67,
+    x2: 67,
+    z1: -77,
+    z2: -81,
+  },
+]
+
+const height = 0.1,
+  size = 0.8,
+
+  curveSegments = 4,
+
+  bevelThickness = 0.02,
+  bevelSize = 0.015
+
+let font
+
+function loadFont() {
+
+  const loader = new FontLoader();
+  loader.load('fonts/optimer_bold' + '.typeface.json', function (response) {
+
+    font = response;
+
+  });
+
+}
+
 gltfLoader.load(
   'models/map.glb',
   (gltf) => {
@@ -113,6 +215,38 @@ gltfLoader.load(
         contactEquationRelaxation: 3,
       }
     )
+
+    let egg;
+    let eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+    const eggShape = new CANNON.Sphere(0.2)
+    eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
+    eggBody.linearDamping = 0.95
+
+    gltfLoader.load(
+      'models/egg.glb',
+      (gltf) => {
+        gltf.scene.traverse(function (child) {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        })
+
+        const road = positions[Math.floor(Math.random() * 5)]
+        const positionX = Math.random() * (road.x2 - road.x1) + road.x1
+        const positionZ = Math.random() * (road.z2 - road.z1) + road.z1
+
+        egg = gltf.scene
+        egg.children[0].scale.set(10, 10, 10)
+        egg.children[0].position.set(0, 0.3, 18)
+        scene.add(egg)
+
+        eggBody.position.set(0, 0.3, 18);
+        world.addBody(eggBody);
+      })
+
+    let count = 0;
+
     world.addContactMaterial(slippery_ground_cm)
       ; (world.solver as CANNON.GSSolver).iterations = 10
     // Character Collider
@@ -121,6 +255,7 @@ gltfLoader.load(
     const colliderBody = new CANNON.Body({ mass: 1, material: slipperyMaterial })
 
     let mixer: THREE.AnimationMixer
+    let npcMixer: THREE.AnimationMixer
     let modelReady = false
     let modelMesh: THREE.Object3D
     let targetMesh: THREE.Object3D
@@ -183,6 +318,36 @@ gltfLoader.load(
         world.addBody(cityBody)
       }
     })
+
+    // const scorePosition = new THREE.AxesHelper(20);
+    // // characterCollider.add(scorePosition)
+    // scene.add(scorePosition);
+    // scorePosition.position.set(0, 0, 0);
+
+    gltfLoader.load(
+      'models/npc.glb',
+      (gltf) => {
+        gltf.scene.traverse(function (child) {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        })
+        const npc = gltf.scene
+        npc.children[0].scale.set(1, 1, 1)
+        npc.children[0].position.set(0, 0, 30)
+        npc.castShadow = true
+        npc.receiveShadow = true
+
+        // npcMixer = new THREE.AnimationMixer(gltf.scene)
+        // const action = npcMixer.clipAction(gltf.animations[0])
+        // action.play()
+        console.log(npc)
+
+        scene.add(npc)
+      }
+    )
+
     gltfLoader.load(
       'models/chicken.glb',
       (gltf) => {
@@ -199,30 +364,7 @@ gltfLoader.load(
         avatar.castShadow = true
         avatar.receiveShadow = true
 
-        gltfLoader.load(
-          'models/egg.glb',
-          (gltf) => {
-            gltf.scene.traverse(function (child) {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            })
-
-            const egg = gltf.scene
-            egg.children[0].scale.set(10, 10, 10)
-            egg.children[0].position.set(0, 0.3, 18)
-            scene.add(egg)
-
-            const anotherEgg = egg.clone()
-            anotherEgg.children[0].scale.set(10, 10, 10)
-            anotherEgg.children[0].position.set(0, 0.3, 38)
-            scene.add(anotherEgg)
-          })
-
         const orbitControls = new OrbitControls(camera, renderer.domElement)
-        const inputVelocity = new THREE.Vector3()
-        const velocity = new CANNON.Vec3()
         orbitControls.enableDamping = true
         orbitControls.dampingFactor = 0.05
         orbitControls.minPolarAngle = Math.PI / 3
@@ -328,6 +470,17 @@ gltfLoader.load(
 
         })
 
+        window.addEventListener('wheel', (event) => {
+          event.preventDefault();
+          
+          // Adjust the camera's zoom based on the deltaY value of the event
+          camera.position.z += event.deltaY * 0.1;
+          if (camera.position.z > 10 ) camera.position.z = 10
+          else if (camera.position.z < -10 ) camera.position.z = -10
+          console.log("camera.position.z :", camera.position.z, event.deltaY)
+          render(); // Make sure to call render to update the scene after adjusting the zoom
+        });
+
         window.addEventListener('resize', onWindowResize, false)
 
         function onWindowResize() {
@@ -341,6 +494,7 @@ gltfLoader.load(
         const clock = new THREE.Clock()
         let delta = 0
         let distance = 0
+        let textMesh
 
         function animate() {
           requestAnimationFrame(animate)
@@ -370,6 +524,9 @@ gltfLoader.load(
             setAction(animationActions[0], true)
             mixer.update(delta)
           }
+          if (npcMixer) {
+            npcMixer.update(delta)
+          }
           delta = Math.min(clock.getDelta(), 0.1)
           world.step(delta)
 
@@ -388,16 +545,56 @@ gltfLoader.load(
         }
 
         function render() {
-          if (!clicked)
+          if (!clicked) {
             camera.lookAt(modelMesh.position.x, modelMesh.position.y, modelMesh.position.z)
+          }
+
           camera.updateProjectionMatrix()
           renderer.render(scene, camera)
 
         }
         colliderBody.addEventListener('collide', function (e: any) {
+          console.log('colliderBody collided with body:', e.contact.bj.id);
           crash = true;
           if (walk)
             walk.kill()
+          if (e.contact.bj.id === 0) {
+            world.removeBody(eggBody);
+            console.log("cameraPosition: ", camera.position);
+            // console.log("scorePosition: ", scorePosition.position);
+            console.log("collectorPosition: ", colliderBody.position);                        
+            
+            const road = positions[Math.floor(Math.random() * 5)]
+            const newX = Math.random() * (road.x2 - road.x1) + road.x1
+            const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+
+            console.log("newX, newZ: ", newX, newZ)
+            
+            egg.children[0].position.set(newX, 0.3, newZ)
+            eggBody.position.set(newX, 10, newZ)
+            eggBody.velocity.set(0, 0, 0);
+
+            // Add back to world after a delay
+            setTimeout(() => {
+              world.addBody(eggBody);
+            }, 1000);
+            console.log("World: ", world)
+
+            plusText.style.top = '33%';
+            plusText.style.visibility = 'visible';
+
+            // Move to the right top corner and disappear gradually after 2s
+            setTimeout(function() {
+              plusText.style.top = '50px';
+              plusText.style.left = 'calc(100% - 50px)';
+              plusText.style.visibility = "hidden";
+            }, 200);
+
+            setTimeout(function() {
+              plusText.style.top = '50%';
+              plusText.style.left = '50%';
+            }, 1500)
+          }
         })
         animate()
         instructions.addEventListener('click', function () {
@@ -422,8 +619,9 @@ gltfLoader.load(
 
           } else {
             clicked = false
-            instructions.style.display = 'none';
-            blocker.style.display = 'none';
+            instructions.style.display = 'none'
+            blocker.style.display = 'none'
+            document.body.appendChild(scoreBoard)
             gsap.to(camera.position, {
               x: 0,
               y: 7,
@@ -452,7 +650,7 @@ gltfLoader.load(
         console.log(error)
       }
     )
-
+    console.log("Camera.position: ", camera.position)
   },
   (xhr) => {
     cp.value = (xhr.loaded) / 76807588 * 100
@@ -463,6 +661,7 @@ gltfLoader.load(
         onComplete: () => {
           cp.remove()
           document.body.append(blocker)
+          loadFont()
         }
       })
     }
