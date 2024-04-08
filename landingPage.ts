@@ -59,7 +59,8 @@ navPane.style.textAlign = "center";
 landingPagePane.append(navPane);
 
 const navItem1 = document.createElement("div");
-navItem1.style.width = "20%";
+navItem1.style.width = "40%";
+navItem1.style.height = "190px";
 navItem1.style.display = "flex";
 navItem1.style.alignItems = "center";
 navItem1.style.justifyContent = "center";
@@ -77,6 +78,7 @@ navItem1.append(navButton1);
 
 const navItem2 = document.createElement("div");
 navItem2.style.width = "20%";
+navItem2.style.height = "190px";
 navItem2.style.display = "flex";
 navItem2.style.alignItems = "center";
 navItem2.style.justifyContent = "center";
@@ -95,23 +97,6 @@ navButton2.onclick = () => {
   landingPagePane.remove();
 };
 navItem2.append(navButton2);
-
-const navItem3 = document.createElement("div");
-navItem3.style.width = "20%";
-navItem3.style.display = "flex";
-navItem3.style.alignItems = "center";
-navItem3.style.justifyContent = "center";
-navItem3.style.aspectRatio = "1.618";
-navItem3.style.borderRadius = "30px";
-navItem3.style.backgroundColor = "rgba(1,1,1,0.5)";
-navPane.append(navItem3);
-
-const navButton3 = document.createElement("img");
-navButton3.src = "/Play-Game.gif";
-navButton3.style.width = "80%";
-navButton3.style.borderRadius = "30px";
-navButton3.style.cursor = "pointer";
-navItem3.append(navButton3);
 
 document.body.append(landingPagePane);
 
