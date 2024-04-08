@@ -2,12 +2,10 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
-import { FontLoader } from "three/addons/loaders/FontLoader.js";
-import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
-import CannonUtils from "./cannonUtils";
+import CannonUtils from "./cannon/cannonUtils";
 //circle progress bar
 const play = () => {
   const cp = new CircleProgress({
@@ -48,7 +46,7 @@ const play = () => {
   blocker.append(instructions);
 
   const scoreLabel = document.createElement("img");
-  scoreLabel.src = "/score.gif";
+  scoreLabel.src = "images/score.gif";
   scoreLabel.style.paddingBottom = "8px";
   scoreLabel.width = 100;
 
@@ -79,7 +77,7 @@ const play = () => {
   plusText.style.position = "absolute";
   //plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
   plusText.style.width = "100px";
-  plusText.src = "/plus.png";
+  plusText.src = "images/plus.png";
   plusText.style.top = "40%";
   plusText.style.left = "50%";
   plusText.style.transform = "translate(-50%, -50%)";
@@ -88,12 +86,11 @@ const play = () => {
   document.body.appendChild(plusText);
 
   const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath("./draco/");
+  dracoLoader.setDecoderPath("draco/");
   const gltfLoader = new GLTFLoader();
   gltfLoader.crossOrigin = true;
   gltfLoader.setDRACOLoader(dracoLoader);
-  let walking = true;
-  let walk;
+  let walk: gsap.core.Tween;
   let crash = false;
 
   const positions = [
@@ -150,13 +147,14 @@ const play = () => {
       );
       camera.position.set(0, 7, -2);
       scene.add(camera);
-      var bgTexture = new THREE.TextureLoader().load("background.jpg");
-      // bgTexture.mapping = THREE.EquirectangularReflectionMapping
-      // bgTexture.minFilter = THREE.LinearFilter;
+      
+      const bgTexture = new THREE.TextureLoader().load("images/background.jpg");
       scene.background = bgTexture;
       scene.environment = bgTexture;
-      var aLight = new THREE.AmbientLight(0xffffff);
+      
+      const aLight = new THREE.AmbientLight(0xffffff);
       scene.add(aLight);
+      
       const directionalLight = new THREE.DirectionalLight(0xffff00, 1);
       directionalLight.position.set(100, 100, 100);
       directionalLight.castShadow = true;
@@ -184,8 +182,8 @@ const play = () => {
 
       const raycaster = new THREE.Raycaster();
       const world = new CANNON.World();
-      // const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
       world.gravity.set(0, -9.82, 0);
+      
       const groundMaterial = new CANNON.Material("groundMaterial");
       const slipperyMaterial = new CANNON.Material("slipperyMaterial");
       const slippery_ground_cm = new CANNON.ContactMaterial(
@@ -200,7 +198,7 @@ const play = () => {
       );
 
       let egg;
-      let eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+      const eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
       const eggShape = new CANNON.Sphere(0.2);
       eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
       eggBody.linearDamping = 0.95;
@@ -211,7 +209,7 @@ const play = () => {
       npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
       npcBody.linearDamping = 0.95;
 
-      let npcBodies: Array<any> = [];
+      // let npcBodies: Array<any> = [];
 
       gltfLoader.load("models/egg.glb", (gltf) => {
         gltf.scene.traverse(function (child) {
@@ -243,7 +241,7 @@ const play = () => {
       });
 
       let mixer: THREE.AnimationMixer;
-      let npcMixer: Array<THREE.AnimationMixer> = [];
+      const npcMixer: Array<THREE.AnimationMixer> = [];
       const npcs: Array<any> = [];
       let modelReady = false;
       let modelMesh: THREE.Object3D;
@@ -253,11 +251,11 @@ const play = () => {
       let activeAction: THREE.AnimationAction;
       let lastAction: THREE.AnimationAction;
 
-      let mapModel = gltf.scene;
+      const mapModel = gltf.scene;
       scene.add(mapModel);
 
       const video = document.createElement("video");
-      video.src = "video.mp4";
+      video.src = "videos/video.mp4";
       video.crossOrigin = "anonymous";
       video.loop = true;
       // video.muted = false
@@ -267,23 +265,27 @@ const play = () => {
       videoTexture.wrapS = THREE.MirroredRepeatWrapping;
       videoTexture.wrapT = THREE.MirroredRepeatWrapping;
 
-      let videoMesh1 = mapModel.getObjectByName("poster1");
+      const videoMesh1 = mapModel.getObjectByName("poster1");
       videoMesh1.material.map = videoTexture;
       videoMesh1.material.side = THREE.FrontSide;
       videoMesh1.material.needsUpdate = true;
-      let videoMesh2 = mapModel.getObjectByName("poster2");
+      
+      const videoMesh2 = mapModel.getObjectByName("poster2");
       videoMesh2.material.map = videoTexture;
       videoMesh2.material.side = THREE.FrontSide;
       videoMesh2.material.needsUpdate = true;
-      let videoMesh3 = mapModel.getObjectByName("poster3");
+      
+      const videoMesh3 = mapModel.getObjectByName("poster3");
       videoMesh3.material.map = videoTexture;
       videoMesh3.material.side = THREE.FrontSide;
       videoMesh3.material.needsUpdate = true;
-      let videoMesh4 = mapModel.getObjectByName("poster4");
+      
+      const videoMesh4 = mapModel.getObjectByName("poster4");
       videoMesh4.material.map = videoTexture;
       videoMesh4.material.side = THREE.DoubleSide;
       videoMesh4.material.needsUpdate = true;
-      let alink = scene.getObjectByName("alink");
+      
+      const alink = scene.getObjectByName("alink");
       alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       gltf.scene.traverse(function (child) {
         if (child.isMesh) {
@@ -309,12 +311,11 @@ const play = () => {
           child.name == "Rectangle011" ||
           child.name == "Rectangle019"
         ) {
-          let cityMesh: THREE.Object3D;
           const cityBody = new CANNON.Body({
             mass: 0,
             material: groundMaterial,
           });
-          cityMesh = child;
+          const cityMesh = child;
           const position = new THREE.Vector3();
           cityMesh.getWorldPosition(position);
 
@@ -412,7 +413,7 @@ const play = () => {
             characterCollider.position.y = 3;
             characterCollider.position.z = 0;
             scene.add(characterCollider);
-            // colliderBody.addShape(colliderShape, new CANNON.Vec3(0, 0.5, 0))
+            
             colliderBody.addShape(colliderShape, new CANNON.Vec3(0, -0.5, 0));
             colliderBody.position.set(
               characterCollider.position.x,
@@ -428,7 +429,7 @@ const play = () => {
 
           const setAction = (
             toAction: THREE.AnimationAction,
-            loop: Boolean
+            loop: boolean
           ) => {
             if (toAction != activeAction) {
               lastAction = activeAction;
@@ -481,7 +482,6 @@ const play = () => {
                     z: targetMesh.point.z,
                     duration: distance / 2,
                   });
-                  walking = true;
 
                   //mouse pointer mesh
                   const ringGeometry = new THREE.RingGeometry(0.1, 0.2);
@@ -505,8 +505,6 @@ const play = () => {
                     z: 0,
                     duration: 1,
                   });
-                }
-                if (intersects[0].object.name === "") {
                 }
               }
             }
@@ -541,7 +539,6 @@ const play = () => {
           const clock = new THREE.Clock();
           let delta = 0;
           let distance = 0;
-          let textMesh;
 
           function animate() {
             requestAnimationFrame(animate);
