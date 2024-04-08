@@ -535,7 +535,8 @@ const play = () => {
             event.preventDefault();
 
             // Adjust the camera's zoom based on the deltaY value of the event
-            camera.position.z += event.deltaY * 0.05;
+            camera.position.z -= event.deltaY * 0.05;
+            camera.position.x = 0;
             if (camera.position.z > 10) camera.position.z = 10;
             else if (camera.position.z < -10) camera.position.z = -10;
             console.log("camera.position.z :", camera.position.z, event.deltaY);
