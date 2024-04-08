@@ -31,7 +31,8 @@ logoText.style.margin = "0";
 logoText.style.backgroundColor = "rgba(1,1,1,0.5)";
 logoText.style.transform = "translate(-50%, 0)";
 logoText.style.fontFamily = "Monospace";
-logoText.innerHTML = "2nd GAME 3D COMING 4-12-2024";
+logoText.innerHTML =
+  "PLAY 2 EARN COMING 4-12-2024<br /> NEW 3D GAME COMING 4-12-2024";
 landingPagePane.append(logoText);
 
 const demoVideo = document.createElement("video");
