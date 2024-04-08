@@ -135,21 +135,6 @@ const play = () => {
     },
   ];
 
-  const height = 0.1,
-    size = 0.8,
-    curveSegments = 4,
-    bevelThickness = 0.02,
-    bevelSize = 0.015;
-
-  let font;
-
-  function loadFont() {
-    const loader = new FontLoader();
-    loader.load("fonts/optimer_bold" + ".typeface.json", function (response) {
-      font = response;
-    });
-  }
-
   gltfLoader.load(
     "models/map.glb",
     (gltf) => {
@@ -477,9 +462,6 @@ const play = () => {
               if (intersects.length > 0) {
                 if (
                   intersects[0].object.name == "Ground" ||
-                  intersects[0].object.name == "Ground" ||
-                  intersects[0].object.name == "Rectangle009" ||
-                  intersects[0].object.name == "B_basis" ||
                   intersects[0].object.name == "Rectangle010" ||
                   intersects[0].object.name == "Rectangle015" ||
                   intersects[0].object.name == "Rectangle001" ||
@@ -749,7 +731,6 @@ const play = () => {
           onComplete: () => {
             cp.remove();
             document.body.append(blocker);
-            loadFont();
           },
         });
       }
