@@ -36,7 +36,7 @@ logoText.innerHTML =
 landingPagePane.append(logoText);
 
 const demoVideo = document.createElement("video");
-demoVideo.src = "/landing.MP4";
+demoVideo.src = "/landing.mp4";
 demoVideo.style.width = "100%";
 demoVideo.style.height = "100%";
 demoVideo.style.objectFit = "fill";
