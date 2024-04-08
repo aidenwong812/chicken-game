@@ -4,7 +4,7 @@ import { play } from './game'
 
 function App() {
   const [playDemo, setPlayDemo] = useState(false)
-  
+
   return (
     <div className={`w-screen h-screen fixed top-0 left-0 z-[9999] bg-[#DDD] ${playDemo ? 'hidden' : ''}`}>
       <video src='videos/landing.mp4' autoPlay muted loop className='w-full h-full object-fill'></video>

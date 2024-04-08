@@ -15,12 +15,12 @@ class CannonUtils {
     let vertices;
     if (geometry.index === null) {
       vertices = (geometry.attributes.position as THREE.BufferAttribute)
-        .array as number[];
+        .array as unknown as number[];
     } else {
       vertices = (
         geometry.clone().toNonIndexed().attributes
           .position as THREE.BufferAttribute
-      ).array as number[];
+      ).array as unknown as number[];
     }
     const indices = Object.keys(vertices).map(Number);
     return new CANNON.Trimesh(vertices, indices);
