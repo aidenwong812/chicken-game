@@ -462,7 +462,6 @@ const play = () => {
               if (intersects.length > 0) {
                 if (
                   intersects[0].object.name == "Ground" ||
-                  intersects[0].object.name == "Ground" ||
                   intersects[0].object.name == "Rectangle010" ||
                   intersects[0].object.name == "Rectangle015" ||
                   intersects[0].object.name == "Rectangle001" ||
