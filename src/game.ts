@@ -245,7 +245,7 @@ const play = () => {
       const npcs: Array<any> = [];
       let modelReady = false;
       let modelMesh: THREE.Object3D;
-      let targetMesh: THREE.Object3D;
+      let targetMesh: THREE.Intersection;
 
       const animationActions: THREE.AnimationAction[] = [];
       let activeAction: THREE.AnimationAction;
@@ -285,7 +285,7 @@ const play = () => {
       videoMesh4.material.side = THREE.DoubleSide;
       videoMesh4.material.needsUpdate = true;
       
-      const alink = scene.getObjectByName("alink");
+      const alink = scene.getObjectByName("alink")! as THREE.Mesh;
       alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       gltf.scene.traverse(function (child) {
         if (child.isMesh) {
@@ -710,7 +710,7 @@ const play = () => {
             }
           });
         },
-        (xhr) => {
+        () => {
           console.log("avatar_glb has been loaded");
         },
         (error) => {
