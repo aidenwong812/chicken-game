@@ -1,15 +1,5 @@
 import { play } from "./index";
 
-// const instructions = document.createElement("div");
-// instructions.style.width = "100%";
-// instructions.style.height = "100%";
-// instructions.style.display = "flex";
-// instructions.style.flexDirection = "column";
-// instructions.style.alignItems = "center";
-// instructions.style.justifyContent = "center";
-// instructions.style.textAlign = "center";
-// instructions.style.cursor = "pointer";
-
 const landingPagePane = document.createElement("div");
 landingPagePane.style.width = "100vw";
 landingPagePane.style.height = "100vh";
@@ -99,5 +89,3 @@ navButton2.onclick = () => {
 navItem2.append(navButton2);
 
 document.body.append(landingPagePane);
-
-// play();
