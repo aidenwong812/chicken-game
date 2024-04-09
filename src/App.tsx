@@ -22,8 +22,8 @@ function App() {
 
     provider.connect()
       .then(({ publicKey }) => {
-        if (publicKey) {
-          play(publicKey)
+        if (publicKey.toBase58()) {
+          play(publicKey.toBase58())
           setPlayDemo(true)
         }
       })
