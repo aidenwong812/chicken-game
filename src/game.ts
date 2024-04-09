@@ -86,10 +86,8 @@ const play = (publicKey) => {
   scoreBoard.style.fontFamily = "Monospace";
   scoreBoard.append(timer);
   scoreBoard.append(scoreDiv);
-
   const plusText = document.createElement("img");
   plusText.style.position = "absolute";
-  //plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
   plusText.style.width = "100px";
   plusText.src = "images/plus.png";
   plusText.style.top = "40%";
