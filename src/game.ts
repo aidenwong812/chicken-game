@@ -8,7 +8,7 @@ import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
 //circle progress bar
 const play = (publicKey) => {
-  console.log(publicKey)
+  console.log(publicKey);
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -54,15 +54,28 @@ const play = (publicKey) => {
   const score = document.createElement("p");
   score.append("0");
 
+  const scoreDiv = document.createElement("div");
+  scoreDiv.style.display = "flex";
+  scoreDiv.style.justifyContent = "center";
+  scoreDiv.style.alignItems = "center";
+  scoreDiv.append(scoreLabel);
+  scoreDiv.append(score);
+
+  const timer = document.createElement("div");
+  timer.style.fontSize = "28px";
+  timer.style.color = "white";
+  timer.style.fontFamily = "Monospace";
+  timer.innerHTML = "30:00";
+
   const scoreBoard = document.createElement("div");
   scoreBoard.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
   scoreBoard.style.position = "fixed";
   scoreBoard.style.top = "0px";
   scoreBoard.style.right = "0px";
   scoreBoard.style.display = "flex";
+  scoreBoard.style.flexDirection = "column";
   scoreBoard.style.justifyContent = "center";
   scoreBoard.style.alignItems = "center";
-  scoreBoard.style.gap = "10px";
   scoreBoard.style.height = "100px";
   scoreBoard.style.width = "200px";
   scoreBoard.style.border = "1px solid gray";
@@ -71,8 +84,8 @@ const play = (publicKey) => {
   scoreBoard.style.fontSize = "24px";
   scoreBoard.style.color = "white";
   scoreBoard.style.fontFamily = "Monospace";
-  scoreBoard.append(scoreLabel);
-  scoreBoard.append(score);
+  scoreBoard.append(timer);
+  scoreBoard.append(scoreDiv);
 
   const plusText = document.createElement("img");
   plusText.style.position = "absolute";
@@ -137,6 +150,8 @@ const play = (publicKey) => {
     "models/map.glb",
     (gltf) => {
       let clicked = true; // navigate click event
+      let min = 30;
+      let sec = 0;
       const scene = new THREE.Scene();
       // scene.fog = new THREE.Fog('#60a3e0', 1, 100)
 
@@ -689,6 +704,24 @@ const play = (publicKey) => {
               });
             } else {
               clicked = false;
+              const timerCount = setInterval(function () {
+                if (sec <= 0) {
+                  if (min-- <= 0) {
+                    min = 30;
+                    sec = 0;
+                    clearInterval(timerCount);
+                    text.innerHTML = "Game Over";
+                    instructions.style.display = "flex";
+                    blocker.style.display = "block";
+                    avatar.position.set(0, 1.72, 0);
+                    characterCollider.position.set(0, 3, 0);
+                    colliderBody.position.set(0, 3, 0);
+                  } else sec = 59;
+                } else {
+                  sec--;
+                }
+                timer.innerHTML = min.toString() + ":" + sec.toString();
+              }, 1000);
               instructions.style.display = "none";
               blocker.style.display = "none";
               document.body.appendChild(scoreBoard);
