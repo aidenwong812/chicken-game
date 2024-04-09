@@ -6,6 +6,7 @@ import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
+import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 //circle progress bar
 const play = (publicKey) => {
   console.log(publicKey);
@@ -225,7 +226,17 @@ const play = (publicKey) => {
       npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
       npcBody.linearDamping = 0.95;
 
-      // let npcBodies: Array<any> = [];
+      let npcBodyClone = [];
+      let npcShapeClone = [];
+      for (let i = 0; i < 10; i++) {
+        npcBodyClone[i] = new CANNON.Body({
+          mass: 1,
+          material: slipperyMaterial,
+        });
+        npcShapeClone[i] = new CANNON.Sphere(0.5);
+        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 0.5, 0));
+        npcBodyClone[i].linearDamping = 0.95;
+      }
 
       gltfLoader.load("models/egg.glb", (gltf) => {
         gltf.scene.traverse(function (child) {
@@ -257,8 +268,6 @@ const play = (publicKey) => {
       });
 
       let mixer: THREE.AnimationMixer;
-      const npcMixer: Array<THREE.AnimationMixer> = [];
-      const npcs: Array<any> = [];
       let modelReady = false;
       let modelMesh: THREE.Object3D;
       let targetMesh: THREE.Intersection;
@@ -363,30 +372,22 @@ const play = (publicKey) => {
         scene.add(npc);
         world.addBody(npcBody);
 
-        // for (let i = 0; i < 10; i++) {
-        //   const road = positions[Math.floor(Math.random() * 5)]
-        //   const newX = Math.random() * (road.x2 - road.x1) + road.x1
-        //   const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+        // Assuming you have initialized your scene, world, positions, npc, slipperyMaterial, and SkeletonUtils
 
-        //   const cloneNpc = SkeletonUtils.clone(npc)
-        //   cloneNpc.children[0].scale.set(1, 1, 1)
-        //   cloneNpc.children[0].position.set(newX, 0, newZ)
-        //   cloneNpc.rotation.x = Math.PI * 2
-        //   cloneNpc.rotation.y = Math.PI
+        for (let i = 0; i < 10; i++) {
+          const road = positions[Math.floor(Math.random() * 5)];
+          const newX = Math.random() * (road.x2 - road.x1) + road.x1;
+          const newZ = Math.random() * (road.z2 - road.z1) + road.z1;
 
-        //   const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-        //   const npcShape = new CANNON.Sphere(0.6)
-        //   npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
-        //   npcBody.linearDamping = 0.95
-        //   npcBody.position.set(newX, 0, newZ)
+          const cloneNpc = SkeletonUtils.clone(npc);
+          cloneNpc.children[0].scale.set(1, 1, 1);
+          cloneNpc.children[0].position.set(newX, 0, newZ);
 
-        //   scene.add(cloneNpc)
-        //   world.addBody(npcBody)
+          npcBodyClone[i].position.set(newX, 0, newZ);
 
-        //   npcs.push(cloneNpc)
-        //   npcBodies.push(npcBody)
-
-        // }
+          scene.add(cloneNpc);
+          world.addBody(npcBodyClone[i]);
+        }
       });
 
       gltfLoader.load(
@@ -538,7 +539,7 @@ const play = (publicKey) => {
               camera.position.z = 2;
             else if (camera.position.z > -2 && camera.position.z < 0)
               camera.position.z = -2;
-            console.log("camera.position.z :", camera.position.z, event.deltaY);
+            // console.log("camera.position.z :", camera.position.z, event.deltaY);
             render(); // Make sure to call render to update the scene after adjusting the zoom
           });
 
@@ -588,20 +589,6 @@ const play = (publicKey) => {
               mixer.update(delta);
             }
 
-            if (npcMixer.length > 0) {
-              npcMixer.forEach((one) => one.update(delta));
-            }
-
-            if (npcs.length > 0) {
-              npcs.forEach((one) => {
-                one.position.set(
-                  one.position.x,
-                  one.position.y,
-                  one.position.z - 2.5 * delta
-                );
-              });
-            }
-
             delta = Math.min(clock.getDelta(), 0.1);
             world.step(delta);
 
@@ -633,7 +620,7 @@ const play = (publicKey) => {
           }
 
           colliderBody.addEventListener("collide", function (e: any) {
-            console.log("colliderBody collided with body:", e.contact.bj.id);
+            // console.log("colliderBody collided with body:", e.contact.bj.id);
             crash = true;
             if (walk) walk.kill();
             if (e.contact.bj.id === 0) {
@@ -669,16 +656,6 @@ const play = (publicKey) => {
               count += 1;
               score.innerHTML = count.toString();
             }
-            if (e.contact.bj.id === 1) {
-              count = 0;
-              score.innerHTML = count.toString();
-              text.innerHTML = "Game Over";
-              instructions.style.display = "flex";
-              blocker.style.display = "block";
-              avatar.position.set(0, 1.72, 0);
-              characterCollider.position.set(0, 3, 0);
-              colliderBody.position.set(0, 3, 0);
-            }
           });
 
           animate();
@@ -707,7 +684,7 @@ const play = (publicKey) => {
               const timerCount = setInterval(function () {
                 if (sec <= 0) {
                   if (min-- <= 0) {
-                    min = 30;
+                    min = 0;
                     sec = 0;
                     clearInterval(timerCount);
                     text.innerHTML = "Game Over";
@@ -720,7 +697,10 @@ const play = (publicKey) => {
                 } else {
                   sec--;
                 }
-                timer.innerHTML = min.toString() + ":" + sec.toString();
+                timer.innerHTML =
+                  min.toString().padStart(2, "0") +
+                  ":" +
+                  sec.toString().padStart(2, "0");
               }, 1000);
               instructions.style.display = "none";
               blocker.style.display = "none";
@@ -745,13 +725,13 @@ const play = (publicKey) => {
           });
         },
         () => {
-          console.log("avatar_glb has been loaded");
+          // console.log("avatar_glb has been loaded");
         },
         (error) => {
           console.log(error);
         }
       );
-      console.log("Camera.position: ", camera.position);
+      // console.log("Camera.position: ", camera.position);
     },
     (xhr) => {
       cp.value = (xhr.loaded / 76807588) * 100;
