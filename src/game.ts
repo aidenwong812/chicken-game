@@ -87,7 +87,6 @@ const play = (publicKey) => {
   scoreBoard.append(timer);
   scoreBoard.append(scoreDiv);
   const plusText = document.createElement("img");
-
   plusText.style.position = "absolute";
   plusText.style.width = "100px";
   plusText.src = "images/plus.png";
