@@ -5,6 +5,31 @@ import { play } from './game'
 function App() {
   const [playDemo, setPlayDemo] = useState(false)
 
+  const getProvider = () => {
+    if ('phantom' in window) {
+      const provider = window.phantom?.solana;
+
+      if (provider?.isPhantom) {
+        return provider;
+      }
+    }
+
+    window.open('https://phantom.app/', '_blank');
+  };
+
+  const handleGame = async () => {
+    const provider = getProvider(); // see "Detecting the Provider"
+
+    provider.connect()
+      .then(({ publicKey }) => {
+        if (publicKey) {
+          play(publicKey)
+          setPlayDemo(true)
+        }
+      })
+      .catch()
+  }
+
   return (
     <div className={`w-screen h-screen fixed top-0 left-0 z-[9999] bg-[#DDD] ${playDemo ? 'hidden' : ''}`}>
       <video src='videos/landing.mp4' autoPlay muted loop className='w-full h-full object-fill'></video>
@@ -22,10 +47,7 @@ function App() {
           <img
             src='images/Play-Demo.gif'
             className='w-[80%] rounded-[30px] cursor-pointer'
-            onClick={() => {
-              play()
-              setPlayDemo(true)
-            }}
+            onClick={handleGame}
           />
         </div>
       </div>
