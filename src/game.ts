@@ -257,6 +257,7 @@ const play = (publicKey) => {
       let mixer: THREE.AnimationMixer;
       const npcMixer: Array<THREE.AnimationMixer> = [];
       const npcs: Array<any> = [];
+
       let modelReady = false;
       let modelMesh: THREE.Object3D;
       let targetMesh: THREE.Intersection;
