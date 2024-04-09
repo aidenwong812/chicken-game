@@ -7,7 +7,8 @@ import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
 //circle progress bar
-const play = () => {
+const play = (publicKey) => {
+  console.log(publicKey)
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -147,14 +148,14 @@ const play = () => {
       );
       camera.position.set(0, 7, -2);
       scene.add(camera);
-      
+
       const bgTexture = new THREE.TextureLoader().load("images/background.jpg");
       scene.background = bgTexture;
       scene.environment = bgTexture;
-      
+
       const aLight = new THREE.AmbientLight(0xffffff);
       scene.add(aLight);
-      
+
       const directionalLight = new THREE.DirectionalLight(0xffff00, 1);
       directionalLight.position.set(100, 100, 100);
       directionalLight.castShadow = true;
@@ -183,7 +184,7 @@ const play = () => {
       const raycaster = new THREE.Raycaster();
       const world = new CANNON.World();
       world.gravity.set(0, -9.82, 0);
-      
+
       const groundMaterial = new CANNON.Material("groundMaterial");
       const slipperyMaterial = new CANNON.Material("slipperyMaterial");
       const slippery_ground_cm = new CANNON.ContactMaterial(
@@ -269,22 +270,22 @@ const play = () => {
       videoMesh1.material.map = videoTexture;
       videoMesh1.material.side = THREE.FrontSide;
       videoMesh1.material.needsUpdate = true;
-      
+
       const videoMesh2 = mapModel.getObjectByName("poster2");
       videoMesh2.material.map = videoTexture;
       videoMesh2.material.side = THREE.FrontSide;
       videoMesh2.material.needsUpdate = true;
-      
+
       const videoMesh3 = mapModel.getObjectByName("poster3");
       videoMesh3.material.map = videoTexture;
       videoMesh3.material.side = THREE.FrontSide;
       videoMesh3.material.needsUpdate = true;
-      
+
       const videoMesh4 = mapModel.getObjectByName("poster4");
       videoMesh4.material.map = videoTexture;
       videoMesh4.material.side = THREE.DoubleSide;
       videoMesh4.material.needsUpdate = true;
-      
+
       const alink = scene.getObjectByName("alink")! as THREE.Mesh;
       alink.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       gltf.scene.traverse(function (child) {
@@ -413,7 +414,7 @@ const play = () => {
             characterCollider.position.y = 3;
             characterCollider.position.z = 0;
             scene.add(characterCollider);
-            
+
             colliderBody.addShape(colliderShape, new CANNON.Vec3(0, -0.5, 0));
             colliderBody.position.set(
               characterCollider.position.x,
