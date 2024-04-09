@@ -8,7 +8,11 @@ import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
 //circle progress bar
 const play = (publicKey) => {
+<<<<<<< HEAD
   console.log(publicKey);
+=======
+  console.log(publicKey)
+>>>>>>> 36c248ba2c56b2a677c444ed7681bf78dde28583
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -555,33 +559,6 @@ const play = (publicKey) => {
           const clock = new THREE.Clock();
           let delta = 0;
           let distance = 0;
-
-          const npcSpeed = 0.1;
-          let npcDirection = new THREE.Vector3(1, 0, 0);
-
-          // Function to update NPC's position
-          function updateNPCPosition(deltaTime) {
-            // Check for boundary collision and change direction if needed
-            positions.forEach((boundary) => {
-              if (
-                (npc.position.x <= boundary.x1 && npcDirection.x < 0) ||
-                (npc.position.x >= boundary.x2 && npcDirection.x > 0)
-              ) {
-                npcDirection.x = -npcDirection.x;
-              }
-              if (
-                (npc.position.z <= boundary.z1 && npcDirection.z < 0) ||
-                (npc.position.z >= boundary.z2 && npcDirection.z > 0)
-              ) {
-                npcDirection.z = -npcDirection.z;
-              }
-            });
-
-            // Update NPC's position
-            npc.position.add(
-              npcDirection.clone().multiplyScalar(npcSpeed * deltaTime)
-            );
-          }
 
           function animate() {
             requestAnimationFrame(animate);
