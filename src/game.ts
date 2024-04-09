@@ -8,11 +8,7 @@ import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
 //circle progress bar
 const play = (publicKey) => {
-<<<<<<< HEAD
   console.log(publicKey);
-=======
-  console.log(publicKey)
->>>>>>> 36c248ba2c56b2a677c444ed7681bf78dde28583
   const cp = new CircleProgress({
     min: 0,
     max: 100,
