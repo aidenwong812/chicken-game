@@ -264,7 +264,6 @@ const play = (publicKey) => {
       const animationActions: THREE.AnimationAction[] = [];
       let activeAction: THREE.AnimationAction;
       let lastAction: THREE.AnimationAction;
-
       const mapModel = gltf.scene;
       scene.add(mapModel);
 
