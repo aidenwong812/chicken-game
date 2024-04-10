@@ -1,10 +1,7 @@
-import { useState } from "react";
 import "./App.css";
 import { play } from "./game";
 
 function App() {
-  const [playDemo, setPlayDemo] = useState(false);
-
   const getProvider = () => {
     if ("phantom" in window) {
       const provider = (window as any).phantom?.solana;
