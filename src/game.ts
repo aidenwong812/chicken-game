@@ -11,9 +11,7 @@ import axios from "axios";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = async (publicKey) => {
-  const server = await axios.get(SERVER_ENDPOINT);
-  console.log(server)
+const play = (publicKey) => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -179,7 +177,7 @@ const play = async (publicKey) => {
     (gltf) => {
       let finished = false;
       let clicked = true; // navigate click event
-      let min = 30;
+      let min = 1;
       let sec = 0;
       const scene = new THREE.Scene();
       // scene.fog = new THREE.Fog('#60a3e0', 1, 100)
@@ -261,7 +259,7 @@ const play = async (publicKey) => {
 
       const npcBodyClone = [];
       const npcShapeClone = [];
-      let npcPos = [];
+      const npcPos = [];
       for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
           mass: 1,
