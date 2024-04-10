@@ -12,7 +12,6 @@ import axios from "axios";
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
 const play = (publicKey) => {
-  console.log(publicKey);
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -103,6 +102,22 @@ const play = (publicKey) => {
   plusText.style.transition = "all 0.5s ease";
   document.body.appendChild(plusText);
 
+  const congratulation = document.createElement("img");
+  congratulation.src = "images/congratulations.png";
+  congratulation.style.width = "50%";
+  congratulation.style.display = "none";
+  congratulation.style.transition = "all 0.5s ease";
+  instructions.append(congratulation);
+
+  const youEarned = document.createElement("div");
+  youEarned.style.width = "60%";
+  youEarned.style.fontSize = "4vw";
+  youEarned.style.fontWeight = "Bold";
+  youEarned.style.display = "none";
+  youEarned.style.paddingBottom = "20px";
+  youEarned.innerHTML = "You earned 90 SOFT COQ INU";
+  instructions.append(youEarned);
+
   const returnButton = document.createElement("div");
   returnButton.style.display = "none";
   returnButton.classList.add("Btn");
@@ -160,8 +175,9 @@ const play = (publicKey) => {
   gltfLoader.load(
     "models/map.glb",
     (gltf) => {
+      let finished = false;
       let clicked = true; // navigate click event
-      let min = 1;
+      let min = 30;
       let sec = 0;
       const scene = new THREE.Scene();
       // scene.fog = new THREE.Fog('#60a3e0', 1, 100)
@@ -243,7 +259,7 @@ const play = (publicKey) => {
 
       const npcBodyClone = [];
       const npcShapeClone = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
           mass: 1,
           material: slipperyMaterial,
@@ -389,8 +405,8 @@ const play = (publicKey) => {
 
         // Assuming you have initialized your scene, world, positions, npc, slipperyMaterial, and SkeletonUtils
 
-        for (let i = 0; i < 10; i++) {
-          const road = positions[Math.floor(Math.random() * 5)];
+        for (let i = 0; i < 12; i++) {
+          const road = positions[Math.floor(i / 2)];
           const newX = Math.random() * (road.x2 - road.x1) + road.x1;
           const newZ = Math.random() * (road.z2 - road.z1) + road.z1;
 
@@ -554,7 +570,6 @@ const play = (publicKey) => {
               camera.position.z = 2;
             else if (camera.position.z > -2 && camera.position.z < 0)
               camera.position.z = -2;
-            // console.log("camera.position.z :", camera.position.z, event.deltaY);
             render(); // Make sure to call render to update the scene after adjusting the zoom
           });
 
@@ -635,7 +650,6 @@ const play = (publicKey) => {
           }
 
           colliderBody.addEventListener("collide", function (e: any) {
-            // console.log("colliderBody collided with body:", e.contact.bj.id);
             crash = true;
             if (walk) walk.kill();
             if (e.contact.bj.id === 0) {
@@ -676,88 +690,94 @@ const play = (publicKey) => {
           animate();
 
           instructions.addEventListener("click", function () {
-            if (clicked == false) {
-              clicked = true;
-              gsap.to(camera.position, {
-                x: 0,
-                y: 40,
-                z: -50,
-                duration: 4,
-                onStart: () => {
-                  orbitControls.enabled = false;
-                },
-                onUpdate: () => {
-                  orbitControls.enabled = false;
-                },
-                onComplete: () => {
-                  orbitControls.enabled = true;
-                  orbitControls.autoRotate = true;
-                },
-              });
-            } else {
-              const timerCount = setInterval(function () {
-                if (sec <= 0) {
-                  if (min-- <= 0) {
-                    min = 0;
-                    sec = 0;
-                    clearInterval(timerCount);
-                    text.innerHTML = "Game Over";
-                    instructions.style.display = "flex";
-                    blocker.style.display = "block";
-                    returnButton.style.display = "flex";
-                    avatar.position.set(0, 1.72, 0);
-                    characterCollider.position.set(0, 3, 0);
-                    colliderBody.position.set(0, 3, 0);
-                    if (count) {
-                      axios.post(SERVER_ENDPOINT, {
-                        address: publicKey,
-                        amount: count,
-                      });
+            if (!finished) {
+              if (clicked == false) {
+                clicked = true;
+                gsap.to(camera.position, {
+                  x: 0,
+                  y: 40,
+                  z: -50,
+                  duration: 4,
+                  onStart: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onUpdate: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onComplete: () => {
+                    orbitControls.enabled = true;
+                    orbitControls.autoRotate = true;
+                  },
+                });
+              } else {
+                const timerCount = setInterval(function () {
+                  if (sec <= 0) {
+                    if (min-- <= 0) {
+                      finished = true;
+                      min = 0;
+                      sec = 0;
+                      clearInterval(timerCount);
+                      text.style.display = "none";
+                      instructions.style.display = "flex";
+                      blocker.style.display = "block";
+                      returnButton.style.display = "flex";
+                      youEarned.style.display = "block";
+                      youEarned.innerHTML =
+                        "You earned " +
+                        (count / 3).toFixed(2).toString() +
+                        " SOFT COQ INU";
+                      congratulation.style.display = "block";
+                      avatar.position.set(0, 1.72, 0);
+                      characterCollider.position.set(0, 3, 0);
+                      colliderBody.position.set(0, 3, 0);
+                      if (count) {
+                        axios.post(SERVER_ENDPOINT, {
+                          address: publicKey,
+                          amount: count,
+                        });
+                      }
+                      count = 0;
+                    } else {
+                      sec = 59;
+                      clicked = false;
                     }
-                    count = 0;
                   } else {
-                    sec = 59;
+                    sec--;
                     clicked = false;
                   }
-                } else {
-                  sec--;
-                  clicked = false;
-                }
-                timer.innerHTML =
-                  min.toString().padStart(2, "0") +
-                  ":" +
-                  sec.toString().padStart(2, "0");
-              }, 1000);
-              instructions.style.display = "none";
-              blocker.style.display = "none";
-              document.body.appendChild(scoreBoard);
-              gsap.to(camera.position, {
-                x: 0,
-                y: 7,
-                z: -2,
-                duration: 4,
-                onStart: () => {
-                  orbitControls.enabled = false;
-                },
-                onUpdate: () => {
-                  orbitControls.enabled = false;
-                },
-                onComplete: () => {
-                  orbitControls.enabled = false;
-                  orbitControls.autoRotate = false;
-                },
-              });
+                  timer.innerHTML =
+                    min.toString().padStart(2, "0") +
+                    ":" +
+                    sec.toString().padStart(2, "0");
+                }, 1000);
+                instructions.style.display = "none";
+                blocker.style.display = "none";
+                document.body.appendChild(scoreBoard);
+                gsap.to(camera.position, {
+                  x: 0,
+                  y: 7,
+                  z: -2,
+                  duration: 4,
+                  onStart: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onUpdate: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onComplete: () => {
+                    orbitControls.enabled = false;
+                    orbitControls.autoRotate = false;
+                  },
+                });
+              }
             }
           });
         },
-        () => {
-          // console.log("avatar_glb has been loaded");
-        },
+        () => {},
         (error) => {
           console.log(error);
         }
       );
-      // console.log("Camera.position: ", camera.position);
     },
     (xhr) => {
       cp.value = (xhr.loaded / 76807588) * 100;
