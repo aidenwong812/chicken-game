@@ -11,7 +11,9 @@ import axios from "axios";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (publicKey) => {
+const play = async (publicKey) => {
+  const server = await axios.get(SERVER_ENDPOINT);
+  console.log(server)
   const cp = new CircleProgress({
     min: 0,
     max: 100,
