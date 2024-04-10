@@ -177,7 +177,7 @@ const play = (publicKey) => {
     (gltf) => {
       let finished = false;
       let clicked = true; // navigate click event
-      let min = 1;
+      let min = 30;
       let sec = 0;
       const scene = new THREE.Scene();
       // scene.fog = new THREE.Fog('#60a3e0', 1, 100)
