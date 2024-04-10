@@ -7,6 +7,9 @@ import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
+import axios from "axios";
+
+const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT
 //circle progress bar
 const play = (publicKey) => {
   console.log(publicKey);
@@ -226,8 +229,8 @@ const play = (publicKey) => {
       npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
       npcBody.linearDamping = 0.95;
 
-      let npcBodyClone = [];
-      let npcShapeClone = [];
+      const npcBodyClone = [];
+      const npcShapeClone = [];
       for (let i = 0; i < 10; i++) {
         npcBodyClone[i] = new CANNON.Body({
           mass: 1,
@@ -693,6 +696,13 @@ const play = (publicKey) => {
                     avatar.position.set(0, 1.72, 0);
                     characterCollider.position.set(0, 3, 0);
                     colliderBody.position.set(0, 3, 0);
+                    if (count) {
+                      axios.post(SERVER_ENDPOINT, {
+                        address: publicKey,
+                        amount: count
+                      });
+                    }
+                    count = 0;
                   } else sec = 59;
                 } else {
                   sec--;
