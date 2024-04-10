@@ -2,11 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
 import CannonUtils from "./cannon/cannonUtils";
-import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 //circle progress bar
 const play = (publicKey) => {
   console.log(publicKey);
