@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.6.8",
     "cannon": "^0.6.2",
     "cannon-es": "^0.20.0",
     "gsap": "^3.12.5",
