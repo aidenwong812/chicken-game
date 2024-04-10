@@ -100,6 +100,13 @@ const play = (publicKey) => {
   plusText.style.transition = "all 0.5s ease";
   document.body.appendChild(plusText);
 
+  const returnButton = document.createElement("div");
+  returnButton.style.display = "none";
+  returnButton.classList.add("Btn");
+
+  returnButton.innerHTML = "Return to Menu";
+  instructions.append(returnButton);
+
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath("draco/");
   const gltfLoader = new GLTFLoader();
@@ -151,7 +158,7 @@ const play = (publicKey) => {
     "models/map.glb",
     (gltf) => {
       let clicked = true; // navigate click event
-      let min = 30;
+      let min = 1;
       let sec = 0;
       const scene = new THREE.Scene();
       // scene.fog = new THREE.Fog('#60a3e0', 1, 100)
@@ -196,6 +203,11 @@ const play = (publicKey) => {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.VSMShadowMap; // PCFShadowMap
       document.body.appendChild(renderer.domElement);
+
+      returnButton.addEventListener("click", () => {
+        window.location.reload();
+        return true;
+      });
 
       const raycaster = new THREE.Raycaster();
       const world = new CANNON.World();
@@ -680,7 +692,6 @@ const play = (publicKey) => {
                 },
               });
             } else {
-              clicked = false;
               const timerCount = setInterval(function () {
                 if (sec <= 0) {
                   if (min-- <= 0) {
@@ -690,12 +701,17 @@ const play = (publicKey) => {
                     text.innerHTML = "Game Over";
                     instructions.style.display = "flex";
                     blocker.style.display = "block";
+                    returnButton.style.display = "flex";
                     avatar.position.set(0, 1.72, 0);
                     characterCollider.position.set(0, 3, 0);
                     colliderBody.position.set(0, 3, 0);
-                  } else sec = 59;
+                  } else {
+                    sec = 59;
+                    clicked = false;
+                  }
                 } else {
                   sec--;
+                  clicked = false;
                 }
                 timer.innerHTML =
                   min.toString().padStart(2, "0") +
@@ -750,6 +766,7 @@ const play = (publicKey) => {
       console.log(error);
     }
   );
+  return false;
 };
 
 export { play };
