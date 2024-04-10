@@ -259,6 +259,7 @@ const play = (publicKey) => {
 
       const npcBodyClone = [];
       const npcShapeClone = [];
+      let npcPos = [];
       for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
           mass: 1,
@@ -400,6 +401,7 @@ const play = (publicKey) => {
         npc.children[0].rotation.x = Math.PI * 2;
         npc.children[0].rotation.y = Math.PI;
         npcBody.position.set(0, 0, 38);
+        npcPos.push([0, 0, 38]);
         scene.add(npc);
         world.addBody(npcBody);
 
@@ -415,7 +417,7 @@ const play = (publicKey) => {
           cloneNpc.children[0].position.set(newX, 0, newZ);
 
           npcBodyClone[i].position.set(newX, 0, newZ);
-
+          npcPos.push([newX, 0, newZ]);
           scene.add(cloneNpc);
           world.addBody(npcBodyClone[i]);
         }
@@ -649,18 +651,54 @@ const play = (publicKey) => {
             renderer.render(scene, camera);
           }
 
+          // Function to calculate the distance between two points
+          function calculateDistance(x1, z1, x2, z2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(z2 - z1, 2));
+          }
+
           colliderBody.addEventListener("collide", function (e: any) {
             crash = true;
             if (walk) walk.kill();
             if (e.contact.bj.id === 0) {
               world.removeBody(eggBody);
 
-              const road = positions[Math.floor(Math.random() * 5)];
-              const newX = Math.random() * (road.x2 - road.x1) + road.x1;
-              const newZ = Math.random() * (road.z2 - road.z1) + road.z1;
+              // Function to generate newX and newZ not within distance d of any position in pos array
+              let newX, newZ;
+              let withinDistance = true;
 
+              while (withinDistance) {
+                // Generate random coordinates
+                const road = positions[Math.floor(Math.random() * 5)];
+                newX = Math.random() * (road.x2 - road.x1) + road.x1;
+                newZ = Math.random() * (road.z2 - road.z1) + road.z1;
+
+                // Check if the new coordinates are within distance d of any position in pos array
+                withinDistance = npcPos.some(
+                  (position) =>
+                    calculateDistance(newX, newZ, position[0], position[2]) < 5
+                );
+                if (
+                  calculateDistance(
+                    newX,
+                    newZ,
+                    eggBody.position.x,
+                    eggBody.position.z
+                  ) < 5
+                )
+                  withinDistance = true;
+                if (
+                  calculateDistance(
+                    newX,
+                    newZ,
+                    colliderBody.position.x,
+                    colliderBody.position.z
+                  ) < 5
+                )
+                  withinDistance = true;
+              }
+              console.log(newX, newZ, npcPos);
               egg.children[0].position.set(newX, 0.3, newZ);
-              eggBody.position.set(newX, 10, newZ);
+              eggBody.position.set(newX, 0.3, newZ);
 
               // Add back to world after a delay
               setTimeout(() => {
