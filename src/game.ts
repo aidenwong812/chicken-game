@@ -11,7 +11,7 @@ import CannonUtils from "./cannon/cannonUtils";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (publicKey) => {
+const play = (isDemo, publicKey = '') => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -760,14 +760,12 @@ const play = (publicKey) => {
                       returnButton.style.display = "flex";
                       youEarned.style.display = "block";
                       youEarned.innerHTML =
-                        "You earned " +
-                        (count / 3).toFixed(2).toString() +
-                        " SOFT COQ INU";
+                        `You earned ${isDemo ? count : (count / 3).toFixed(2)} ${isDemo ? "EGG(S)" : "SOFT COQ INU"}`
                       congratulation.style.display = "block";
                       avatar.position.set(0, 1.72, 0);
                       characterCollider.position.set(0, 3, 0);
                       colliderBody.position.set(0, 3, 0);
-                      if (count) {
+                      if (count && !isDemo) {
                         axios.post(SERVER_ENDPOINT, {
                           address: publicKey,
                           amount: count,
