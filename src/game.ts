@@ -6,8 +6,8 @@ import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
-import CannonUtils from "./cannon/cannonUtils";
 import axios from "axios";
+import CannonUtils from "./cannon/cannonUtils";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
@@ -259,7 +259,7 @@ const play = (publicKey) => {
 
       const npcBodyClone = [];
       const npcShapeClone = [];
-      let npcPos = [];
+      const npcPos = [];
       for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
           mass: 1,
@@ -696,7 +696,6 @@ const play = (publicKey) => {
                 )
                   withinDistance = true;
               }
-              console.log(newX, newZ, npcPos);
               egg.children[0].position.set(newX, 0.3, newZ);
               eggBody.position.set(newX, 0.3, newZ);
 
