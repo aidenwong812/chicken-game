@@ -1,10 +1,7 @@
-import { useState } from "react";
 import "./App.css";
 import { play } from "./game";
 
 function App() {
-  const [playDemo, setPlayDemo] = useState(false);
-
   const getProvider = () => {
     if ("phantom" in window) {
       const provider = (window as any).phantom?.solana;
@@ -49,16 +46,23 @@ function App() {
         NEW 3D GAME COMING 4-12-2024
       </p>
 
-      <div className="absolute w-full h-1/2 bottom-1/2 left-1/2 flex items-center text-center justify-evenly -translate-x-1/2 translate-y-1/2">
-        <div className="w-[40%] h-[190px] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
+      <div className="absolute w-full h-1/2 bottom-1/2 left-1/2 flex max-md:flex-col items-center text-center justify-evenly -translate-x-1/2 translate-y-1/2">
+        <div className="w-[40%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
           <img
             src="images/Chick-City.gif"
             className="w-[80%] rounded-[30px] cursor-pointer"
           />
         </div>
-        <div className="w-[20%] h-[190px] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
+        <div className="w-[20%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
           <img
             src="images/Play-Demo.gif"
+            className="w-[80%] rounded-[30px] cursor-pointer"
+            onClick={handleGame}
+          />
+        </div>
+        <div className="w-[20%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
+          <img
+            src="images/Play-Game.gif"
             className="w-[80%] rounded-[30px] cursor-pointer"
             onClick={handleGame}
           />
