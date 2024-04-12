@@ -1,5 +1,8 @@
+import { ToastContainer, toast } from "react-toastify";
 import "./App.css";
 import { play } from "./game";
+
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const getProvider = () => {
@@ -30,7 +33,10 @@ function App() {
             document.getElementById("landing").classList.add("hidden");
           }
         })
-        .catch();
+        .catch((err) => {
+          console.log(err)
+          toast.error("Please create wallet")
+        });
     }
   };
 
@@ -74,6 +80,7 @@ function App() {
           />
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }
