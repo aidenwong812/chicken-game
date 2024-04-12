@@ -560,6 +560,37 @@ const play = (isDemo, publicKey = '') => {
             }
           });
 
+          let key = ""
+
+          window.addEventListener("keydown", (event) => {
+            if (!finished && !clicked) {
+              if (walk) {
+                walk.kill()
+              }
+              switch (event.key) {
+                case "ArrowUp":
+                  key = "up"
+                  break
+                case "ArrowDown":
+                  key = "down"
+                  break
+                case "ArrowLeft":
+                  key = "left"
+                  break
+                case "ArrowRight":
+                  key = "right"
+                  break
+              }
+            }
+          })
+
+          window.addEventListener("keyup", (event) => {
+            event.preventDefault()
+            key = ""
+            setAction(animationActions[0], true);
+            mixer.update(delta);
+          })
+
           window.addEventListener("wheel", (event) => {
             event.preventDefault();
 
@@ -613,6 +644,32 @@ const play = (isDemo, publicKey = '') => {
               modelMesh.position.lerp(characterCollider.position, 0.1);
             }
 
+            const currentDirectionQuaternion = new THREE.Vector3(0, 0, 1).applyQuaternion(modelMesh.quaternion);
+            switch (key) {
+              case "up":
+                colliderBody.position.set(
+                  colliderBody.position.x + 3 * currentDirectionQuaternion.x * delta,
+                  colliderBody.position.y,
+                  colliderBody.position.z + 3 * currentDirectionQuaternion.z * delta,
+                )
+                setAction(animationActions[1], true);
+                mixer.update(delta);
+                break;
+              case "down":
+                colliderBody.position.set(
+                  colliderBody.position.x - 3 * currentDirectionQuaternion.x * delta,
+                  colliderBody.position.y,
+                  colliderBody.position.z - 3 * currentDirectionQuaternion.z * delta,
+                )
+                setAction(animationActions[1], true);
+                mixer.update(delta);
+                break;
+              case "right":
+                break;
+              case "left":
+                break;
+            }
+
             if (distance >= 1) {
               setAction(animationActions[1], true);
               mixer.update(delta);
@@ -635,6 +692,7 @@ const play = (isDemo, publicKey = '') => {
               videoTexture.needsUpdate = true;
               video.play();
             }
+
             render();
           }
 
@@ -808,7 +866,7 @@ const play = (isDemo, publicKey = '') => {
             }
           });
         },
-        () => {},
+        () => { },
         (error) => {
           console.log(error);
         }
