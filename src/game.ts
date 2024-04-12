@@ -12,6 +12,7 @@ import CannonUtils from "./cannon/cannonUtils";
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
 const play = (isDemo, publicKey = '') => {
+  console.log(publicKey)
   const cp = new CircleProgress({
     min: 0,
     max: 100,
