@@ -11,7 +11,7 @@ import CannonUtils from "./cannon/cannonUtils";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (isDemo, publicKey = '') => {
+const play = (isDemo, publicKey = "") => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -136,7 +136,7 @@ const play = (isDemo, publicKey = '') => {
   const positions = [
     {
       x1: -1.5,
-      x2: -1.5,
+      x2: 1.5,
       z1: -81,
       z2: 81,
     },
@@ -147,8 +147,8 @@ const play = (isDemo, publicKey = '') => {
       z2: 81,
     },
     {
-      x1: -63,
-      x2: -67,
+      x1: -67,
+      x2: -63,
       z1: -81,
       z2: 81,
     },
@@ -161,14 +161,14 @@ const play = (isDemo, publicKey = '') => {
     {
       x1: -67,
       x2: 67,
-      z1: -1,
+      z1: -2,
       z2: 1,
     },
     {
       x1: -67,
       x2: 67,
-      z1: -77,
-      z2: -81,
+      z1: -81,
+      z2: -77,
     },
   ];
 
@@ -253,8 +253,8 @@ const play = (isDemo, publicKey = '') => {
 
       let npc;
       const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-      const npcShape = new CANNON.Sphere(0.5);
-      npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+      const npcShape = new CANNON.Sphere(1.0);
+      npcBody.addShape(npcShape, new CANNON.Vec3(0, 1.0, 0));
       npcBody.linearDamping = 0.95;
 
       const npcBodyClone = [];
@@ -560,36 +560,52 @@ const play = (isDemo, publicKey = '') => {
             }
           });
 
-          let key = ""
+          let keyUp = false;
+          let keyDown = false;
+          let keyLeft = false;
+          let keyRight = false;
 
           window.addEventListener("keydown", (event) => {
             if (!finished && !clicked) {
               if (walk) {
-                walk.kill()
+                walk.kill();
               }
               switch (event.key) {
                 case "ArrowUp":
-                  key = "up"
-                  break
+                  keyUp = true;
+                  break;
                 case "ArrowDown":
-                  key = "down"
-                  break
+                  keyDown = true;
+                  break;
                 case "ArrowLeft":
-                  key = "left"
-                  break
+                  keyLeft = true;
+                  break;
                 case "ArrowRight":
-                  key = "right"
-                  break
+                  keyRight = true;
+                  break;
               }
             }
-          })
+          });
 
           window.addEventListener("keyup", (event) => {
-            event.preventDefault()
-            key = ""
+            event.preventDefault();
+            switch (event.key) {
+              case "ArrowUp":
+                keyUp = false;
+                break;
+              case "ArrowDown":
+                keyDown = false;
+                break;
+              case "ArrowLeft":
+                keyLeft = false;
+                break;
+              case "ArrowRight":
+                keyRight = false;
+                break;
+            }
             setAction(animationActions[0], true);
             mixer.update(delta);
-          })
+          });
 
           window.addEventListener("wheel", (event) => {
             event.preventDefault();
@@ -620,6 +636,9 @@ const play = (isDemo, publicKey = '') => {
           let delta = 0;
           let distance = 0;
 
+          const rotationSpeed = (Math.PI / 180) * 10;
+          const rotationAxis = new THREE.Vector3(0, 1, 0); // Rotate around the y-axis
+
           function animate() {
             requestAnimationFrame(animate);
             if (modelReady) {
@@ -644,38 +663,107 @@ const play = (isDemo, publicKey = '') => {
               modelMesh.position.lerp(characterCollider.position, 0.1);
             }
 
-            const currentDirectionQuaternion = new THREE.Vector3(0, 0, 1).applyQuaternion(modelMesh.quaternion);
-            switch (key) {
-              case "up":
-                colliderBody.position.set(
-                  colliderBody.position.x + 3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z + 3 * currentDirectionQuaternion.z * delta,
-                )
-                setAction(animationActions[1], true);
-                mixer.update(delta);
-                break;
-              case "down":
-                colliderBody.position.set(
-                  colliderBody.position.x - 3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z - 3 * currentDirectionQuaternion.z * delta,
-                )
-                setAction(animationActions[1], true);
-                mixer.update(delta);
-                break;
-              case "right":
-                break;
-              case "left":
-                break;
-            }
+            const currentDirectionQuaternion = new THREE.Vector3(
+              0,
+              0,
+              1
+            ).applyQuaternion(modelMesh.quaternion);
 
-            if (distance >= 1) {
+            if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
               setAction(animationActions[1], true);
               mixer.update(delta);
             } else {
               setAction(animationActions[0], true);
               mixer.update(delta);
+            }
+
+            if (keyUp) {
+              let flag = false;
+              for (let i = 0; i < 6; i++) {
+                if (
+                  positions[i].x1 <
+                    colliderBody.position.x +
+                      3 * currentDirectionQuaternion.x * delta &&
+                  positions[i].x2 >
+                    colliderBody.position.x +
+                      3 * currentDirectionQuaternion.x * delta &&
+                  positions[i].z1 <
+                    colliderBody.position.z +
+                      3 * currentDirectionQuaternion.z * delta &&
+                  positions[i].z2 >
+                    colliderBody.position.z +
+                      3 * currentDirectionQuaternion.z * delta
+                ) {
+                  flag = true;
+                  break;
+                }
+              }
+              if (flag)
+                colliderBody.position.set(
+                  colliderBody.position.x +
+                    3 * currentDirectionQuaternion.x * delta,
+                  colliderBody.position.y,
+                  colliderBody.position.z +
+                    3 * currentDirectionQuaternion.z * delta
+                );
+            } else if (keyDown) {
+              let flag = false;
+              for (let i = 0; i < 6; i++) {
+                if (
+                  positions[i].x1 <
+                    colliderBody.position.x -
+                      3 * currentDirectionQuaternion.x * delta &&
+                  positions[i].x2 >
+                    colliderBody.position.x -
+                      3 * currentDirectionQuaternion.x * delta &&
+                  positions[i].z1 <
+                    colliderBody.position.z -
+                      3 * currentDirectionQuaternion.z * delta &&
+                  positions[i].z2 >
+                    colliderBody.position.z -
+                      3 * currentDirectionQuaternion.z * delta
+                ) {
+                  flag = true;
+                  break;
+                }
+              }
+              if (flag)
+                colliderBody.position.set(
+                  colliderBody.position.x -
+                    3 * currentDirectionQuaternion.x * delta,
+                  colliderBody.position.y,
+                  colliderBody.position.z -
+                    3 * currentDirectionQuaternion.z * delta
+                );
+            }
+            if (keyLeft) {
+              const deltaLeftRotation = new THREE.Quaternion().setFromAxisAngle(
+                rotationAxis,
+                rotationSpeed
+              );
+              targetQuaternion.multiplyQuaternions(
+                deltaLeftRotation,
+                targetQuaternion
+              );
+
+              // Apply the target quaternion to the modelMesh
+              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
+                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
+              }
+            } else if (keyRight) {
+              const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
+                rotationAxis,
+                -rotationSpeed
+              );
+              targetQuaternion.multiplyQuaternions(
+                deltaRotation,
+                targetQuaternion
+              );
+
+              // Apply the target quaternion to the modelMesh
+              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
+                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
+              }
             }
 
             delta = Math.min(clock.getDelta(), 0.1);
@@ -692,7 +780,6 @@ const play = (isDemo, publicKey = '') => {
               videoTexture.needsUpdate = true;
               video.play();
             }
-
             render();
           }
 
@@ -788,6 +875,7 @@ const play = (isDemo, publicKey = '') => {
             if (!finished) {
               if (clicked == false) {
                 clicked = true;
+
                 gsap.to(camera.position, {
                   x: 0,
                   y: 40,
@@ -817,8 +905,9 @@ const play = (isDemo, publicKey = '') => {
                       blocker.style.display = "block";
                       returnButton.style.display = "flex";
                       youEarned.style.display = "block";
-                      youEarned.innerHTML =
-                        `You earned ${isDemo ? count : (count / 3).toFixed(2)} ${isDemo ? "EGG(S)" : "SOFT COQ INU"}`
+                      youEarned.innerHTML = `You earned ${
+                        isDemo ? count : (count / 3).toFixed(2)
+                      } ${isDemo ? "EGG(S)" : "SOFT COQ INU"}`;
                       congratulation.style.display = "block";
                       avatar.position.set(0, 1.72, 0);
                       characterCollider.position.set(0, 3, 0);
@@ -838,6 +927,7 @@ const play = (isDemo, publicKey = '') => {
                     sec--;
                     clicked = false;
                   }
+
                   timer.innerHTML =
                     min.toString().padStart(2, "0") +
                     ":" +
@@ -866,7 +956,7 @@ const play = (isDemo, publicKey = '') => {
             }
           });
         },
-        () => { },
+        () => {},
         (error) => {
           console.log(error);
         }
