@@ -11,7 +11,7 @@ import CannonUtils from "./cannon/cannonUtils";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (isDemo, publicKey = '') => {
+const play = (isDemo, publicKey = "") => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -246,13 +246,13 @@ const play = (isDemo, publicKey = '') => {
       );
 
       let egg;
-      const eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-      const eggShape = new CANNON.Sphere(0.2);
-      eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
+      const eggBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
+      const eggShape = new CANNON.Sphere(0.5);
+      eggBody.addShape(eggShape, new CANNON.Vec3(0, 1, 0));
       eggBody.linearDamping = 0.95;
 
       let npc;
-      const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+      const npcBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
       const npcShape = new CANNON.Sphere(1.0);
       npcBody.addShape(npcShape, new CANNON.Vec3(0, 1.0, 0));
       npcBody.linearDamping = 0.95;
@@ -262,11 +262,12 @@ const play = (isDemo, publicKey = '') => {
       const npcPos = [];
       for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
-          mass: 1,
+          mass: 0,
           material: slipperyMaterial,
         });
-        npcShapeClone[i] = new CANNON.Sphere(0.5);
-        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 0.5, 0));
+
+        npcShapeClone[i] = new CANNON.Sphere(1.0);
+        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 1.0, 0));
         npcBodyClone[i].linearDamping = 0.95;
       }
 
@@ -477,6 +478,9 @@ const play = (isDemo, publicKey = '') => {
             gsap.to(camera.position, { x: 0, y: 5, z: -20, duration: 2 });
           };
 
+          // Add a variable to track whether the mouse or keyboard control is active
+          let controlActive = "none"; // can be 'none', 'mouse', or 'keyboard'
+
           const setAction = (
             toAction: THREE.AnimationAction,
             loop: boolean
@@ -500,112 +504,147 @@ const play = (isDemo, publicKey = '') => {
 
           const mouse = new THREE.Vector2();
 
-          renderer.domElement.addEventListener("mousedown", (event) => {
-            event.preventDefault();
-            if (!clicked) {
-              // Set the mouse coordinates (normalized between -1 and 1)
-              mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-              mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+          window.addEventListener(
+            "mousedown",
+            (event) => {
+              event.preventDefault();
 
-              // Set the origin of the raycaster to the camera position
-              raycaster.setFromCamera(mouse, camera);
-              const intersects = raycaster.intersectObjects(scene.children);
-              if (intersects.length > 0) {
-                if (
-                  intersects[0].object.name == "Ground" ||
-                  intersects[0].object.name == "Rectangle010" ||
-                  intersects[0].object.name == "Rectangle015" ||
-                  intersects[0].object.name == "Rectangle001" ||
-                  intersects[0].object.name == "Rectangle025" ||
-                  intersects[0].object.name == "Object_2"
-                ) {
-                  //mouse pointer mesh
-                  crash = false;
-                  targetMesh = intersects[0];
+              if (!clicked) {
+                if (controlActive === "keyboard") return;
+                // Set the mouse coordinates (normalized between -1 and 1)
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-                  if (walk) walk.kill();
-                  distance = colliderBody.position.distanceTo(targetMesh.point);
+                // Set the origin of the raycaster to the camera position
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(scene.children);
+                if (intersects.length > 0) {
+                  if (
+                    intersects[0].object.name == "Ground" ||
+                    intersects[0].object.name == "Rectangle010" ||
+                    intersects[0].object.name == "Rectangle015" ||
+                    intersects[0].object.name == "Rectangle001" ||
+                    intersects[0].object.name == "Rectangle025" ||
+                    intersects[0].object.name == "Object_2"
+                  ) {
+                    //mouse pointer mesh
+                    crash = false;
+                    targetMesh = intersects[0];
 
-                  walk = gsap.to(colliderBody.position, {
-                    x: targetMesh.point.x,
-                    // y: targetMesh.point.y,
-                    z: targetMesh.point.z,
-                    duration: distance / 2,
-                  });
+                    if (walk) walk.kill();
+                    const targetMeshPoint = new CANNON.Vec3(
+                      targetMesh.point.x,
+                      targetMesh.point.y,
+                      targetMesh.point.z
+                    );
+                    distance =
+                      colliderBody.position.distanceTo(targetMeshPoint);
 
-                  //mouse pointer mesh
-                  const ringGeometry = new THREE.RingGeometry(0.1, 0.2);
-                  // Define the material
-                  const material = new THREE.MeshBasicMaterial({
-                    color: "#ff66cc",
-                    side: THREE.DoubleSide,
-                  });
-                  // Create the mesh
-                  const ringMesh = new THREE.Mesh(ringGeometry, material);
-                  ringMesh.rotation.x = Math.PI / 2; //
-                  ringMesh.position.set(
-                    targetMesh.point.x,
-                    targetMesh.point.y,
-                    targetMesh.point.z
-                  );
-                  scene.add(ringMesh);
-                  gsap.to(ringMesh.scale, {
-                    x: 0,
-                    y: 0,
-                    z: 0,
-                    duration: 1,
-                  });
+                    walk = gsap.to(colliderBody.position, {
+                      x: targetMesh.point.x,
+                      // y: targetMesh.point.y,
+                      z: targetMesh.point.z,
+                      duration: distance / 2,
+                      onComplete: () => {
+                        clicked = false;
+                      },
+                    });
+
+                    //mouse pointer mesh
+                    const ringGeometry = new THREE.RingGeometry(0.1, 0.2);
+                    // Define the material
+                    const material = new THREE.MeshBasicMaterial({
+                      color: "#ff66cc",
+                      side: THREE.DoubleSide,
+                    });
+                    // Create the mesh
+                    const ringMesh = new THREE.Mesh(ringGeometry, material);
+                    ringMesh.rotation.x = Math.PI / 2;
+                    ringMesh.position.set(
+                      targetMesh.point.x,
+                      targetMesh.point.y,
+                      targetMesh.point.z
+                    );
+                    scene.add(ringMesh);
+                    gsap.to(ringMesh.scale, {
+                      x: 0,
+                      y: 0,
+                      z: 0,
+                      duration: 1,
+                    });
+                  }
                 }
+                controlActive = "mouse";
               }
-            }
-          });
+              // Explicitly set focus back to the window if it's lost
+              if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
+              }
+              window.focus();
+            },
+            false
+          );
 
           let keyUp = false;
           let keyDown = false;
           let keyLeft = false;
           let keyRight = false;
 
-          window.addEventListener("keydown", (event) => {
-            if (!finished && !clicked) {
-              if (walk) {
-                walk.kill();
+          window.addEventListener(
+            "keydown",
+            (event) => {
+              event.preventDefault();
+
+              if (!finished) {
+                if (controlActive === "mouse") return;
+                if (walk) {
+                  walk.kill();
+                }
+                switch (event.key) {
+                  case "ArrowUp":
+                    keyUp = true;
+                    break;
+                  case "ArrowDown":
+                    keyDown = true;
+                    break;
+                  case "ArrowLeft":
+                    keyLeft = true;
+                    break;
+                  case "ArrowRight":
+                    keyRight = true;
+                    break;
+                }
+                controlActive = "keyboard";
               }
+            },
+            false
+          );
+
+          window.addEventListener(
+            "keyup",
+            (event) => {
+              event.preventDefault();
               switch (event.key) {
                 case "ArrowUp":
-                  keyUp = true;
+                  keyUp = false;
                   break;
                 case "ArrowDown":
-                  keyDown = true;
+                  keyDown = false;
                   break;
                 case "ArrowLeft":
-                  keyLeft = true;
+                  keyLeft = false;
                   break;
                 case "ArrowRight":
-                  keyRight = true;
+                  keyRight = false;
                   break;
               }
-            }
-          });
-
-          window.addEventListener("keyup", (event) => {
-            event.preventDefault();
-            switch (event.key) {
-              case "ArrowUp":
-                keyUp = false;
-                break;
-              case "ArrowDown":
-                keyDown = false;
-                break;
-              case "ArrowLeft":
-                keyLeft = false;
-                break;
-              case "ArrowRight":
-                keyRight = false;
-                break;
-            }
-            setAction(animationActions[0], true);
-            mixer.update(delta);
-          });
+              setAction(animationActions[0], true);
+              if (!keyUp && !keyDown && !keyLeft && !keyRight) {
+                controlActive = "none";
+              }
+            },
+            false
+          );
 
           window.addEventListener("wheel", (event) => {
             event.preventDefault();
@@ -636,138 +675,160 @@ const play = (isDemo, publicKey = '') => {
           let delta = 0;
           let distance = 0;
 
-          const rotationSpeed = (Math.PI / 180) * 10;
+          const rotationSpeed = (Math.PI / 180) * 5;
           const rotationAxis = new THREE.Vector3(0, 1, 0); // Rotate around the y-axis
 
           function animate() {
             requestAnimationFrame(animate);
+            // If there's a key pressed, handle keyboard control
+            if (keyUp || keyDown || keyLeft || keyRight) {
+              // Allow keyboard control to proceed
+              controlActive = "keyboard";
+            }
+            // release the control lock
+            if (
+              !keyUp &&
+              !keyDown &&
+              !keyLeft &&
+              !keyRight &&
+              controlActive === "keyboard"
+            ) {
+              controlActive = "none";
+            }
+
             if (modelReady) {
+              const currentDirectionQuaternion = new THREE.Vector3(
+                0,
+                0,
+                1
+              ).applyQuaternion(modelMesh.quaternion);
+              if (controlActive === "keyboard") {
+                if (keyLeft) {
+                  const deltaLeftRotation =
+                    new THREE.Quaternion().setFromAxisAngle(
+                      rotationAxis,
+                      rotationSpeed
+                    );
+                  targetQuaternion.multiplyQuaternions(
+                    deltaLeftRotation,
+                    targetQuaternion
+                  );
+                } else if (keyRight) {
+                  const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
+                    rotationAxis,
+                    -rotationSpeed
+                  );
+                  targetQuaternion.multiplyQuaternions(
+                    deltaRotation,
+                    targetQuaternion
+                  );
+                } else if (keyUp) {
+                  let flag = false;
+                  for (let i = 0; i < 6; i++) {
+                    if (
+                      positions[i].x1 <
+                        colliderBody.position.x +
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].x2 >
+                        colliderBody.position.x +
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].z1 <
+                        colliderBody.position.z +
+                          4 * currentDirectionQuaternion.z * delta &&
+                      positions[i].z2 >
+                        colliderBody.position.z +
+                          4 * currentDirectionQuaternion.z * delta
+                    ) {
+                      flag = true;
+                      break;
+                    }
+                  }
+                  if (flag)
+                    colliderBody.position.set(
+                      colliderBody.position.x +
+                        4 * currentDirectionQuaternion.x * delta,
+                      colliderBody.position.y,
+                      colliderBody.position.z +
+                        4 * currentDirectionQuaternion.z * delta
+                    );
+                } else if (keyDown) {
+                  let flag = false;
+                  for (let i = 0; i < 6; i++) {
+                    if (
+                      positions[i].x1 <
+                        colliderBody.position.x -
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].x2 >
+                        colliderBody.position.x -
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].z1 <
+                        colliderBody.position.z -
+                          4 * currentDirectionQuaternion.z * delta &&
+                      positions[i].z2 >
+                        colliderBody.position.z -
+                          4 * currentDirectionQuaternion.z * delta
+                    ) {
+                      flag = true;
+                      break;
+                    }
+                  }
+                  if (flag)
+                    colliderBody.position.set(
+                      colliderBody.position.x -
+                        4 * currentDirectionQuaternion.x * delta,
+                      colliderBody.position.y,
+                      colliderBody.position.z -
+                        4 * currentDirectionQuaternion.z * delta
+                    );
+                }
+                if (!modelMesh.quaternion.equals(targetQuaternion)) {
+                  modelMesh.quaternion.rotateTowards(
+                    targetQuaternion,
+                    delta * 10
+                  );
+                }
+                modelMesh.position.lerp(characterCollider.position, 0.1);
+              }
+
+              if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
+                setAction(animationActions[1], true);
+                mixer.update(delta);
+              } else {
+                setAction(animationActions[0], true);
+                mixer.update(delta);
+              }
               const p = characterCollider.position;
               p.y -= 1;
               modelMesh.position.y = characterCollider.position.y;
               const rotationMatrix = new THREE.Matrix4();
-              if (targetMesh)
-                distance = colliderBody.position.distanceTo(targetMesh.point);
-              if (distance > 1) {
-                if (targetMesh && !crash) {
-                  rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up);
-                  targetQuaternion.setFromRotationMatrix(rotationMatrix);
-                }
-              }
-              if (!modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(
-                  targetQuaternion,
-                  delta * 10
+
+              if (targetMesh && controlActive === "mouse") {
+                const targetMeshPoint = new CANNON.Vec3(
+                  targetMesh.point.x,
+                  targetMesh.point.y,
+                  targetMesh.point.z
                 );
-              }
-              modelMesh.position.lerp(characterCollider.position, 0.1);
-            }
-
-            const currentDirectionQuaternion = new THREE.Vector3(
-              0,
-              0,
-              1
-            ).applyQuaternion(modelMesh.quaternion);
-
-            if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
-              setAction(animationActions[1], true);
-              mixer.update(delta);
-            } else {
-              setAction(animationActions[0], true);
-              mixer.update(delta);
-            }
-
-            if (keyUp) {
-              let flag = false;
-              for (let i = 0; i < 6; i++) {
-                if (
-                  positions[i].x1 <
-                    colliderBody.position.x +
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].x2 >
-                    colliderBody.position.x +
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].z1 <
-                    colliderBody.position.z +
-                      3 * currentDirectionQuaternion.z * delta &&
-                  positions[i].z2 >
-                    colliderBody.position.z +
-                      3 * currentDirectionQuaternion.z * delta
-                ) {
-                  flag = true;
-                  break;
+                distance = colliderBody.position.distanceTo(targetMeshPoint);
+                if (distance > 1) {
+                  if (targetMesh && !crash) {
+                    rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up);
+                    targetQuaternion.setFromRotationMatrix(rotationMatrix);
+                  }
                 }
-              }
-              if (flag)
-                colliderBody.position.set(
-                  colliderBody.position.x +
-                    3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z +
-                    3 * currentDirectionQuaternion.z * delta
-                );
-            } else if (keyDown) {
-              let flag = false;
-              for (let i = 0; i < 6; i++) {
-                if (
-                  positions[i].x1 <
-                    colliderBody.position.x -
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].x2 >
-                    colliderBody.position.x -
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].z1 <
-                    colliderBody.position.z -
-                      3 * currentDirectionQuaternion.z * delta &&
-                  positions[i].z2 >
-                    colliderBody.position.z -
-                      3 * currentDirectionQuaternion.z * delta
-                ) {
-                  flag = true;
-                  break;
+                if (!modelMesh.quaternion.equals(targetQuaternion)) {
+                  modelMesh.quaternion.rotateTowards(
+                    targetQuaternion,
+                    delta * 10
+                  );
                 }
-              }
-              if (flag)
-                colliderBody.position.set(
-                  colliderBody.position.x -
-                    3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z -
-                    3 * currentDirectionQuaternion.z * delta
-                );
-            }
-            if (keyLeft) {
-              const deltaLeftRotation = new THREE.Quaternion().setFromAxisAngle(
-                rotationAxis,
-                rotationSpeed
-              );
-              targetQuaternion.multiplyQuaternions(
-                deltaLeftRotation,
-                targetQuaternion
-              );
-
-              // Apply the target quaternion to the modelMesh
-              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
-              }
-            } else if (keyRight) {
-              const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
-                rotationAxis,
-                -rotationSpeed
-              );
-              targetQuaternion.multiplyQuaternions(
-                deltaRotation,
-                targetQuaternion
-              );
-
-              // Apply the target quaternion to the modelMesh
-              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
+                modelMesh.position.lerp(characterCollider.position, 0.1);
               }
             }
+            var fixedTimeStep = 1.0 / 60.0; // seconds
+            var maxSubSteps = 3;
 
             delta = Math.min(clock.getDelta(), 0.1);
-            world.step(delta);
+            world.step(fixedTimeStep, delta, maxSubSteps);
 
             characterCollider.position.set(
               colliderBody.position.x,
