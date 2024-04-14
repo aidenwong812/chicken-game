@@ -11,7 +11,7 @@ import CannonUtils from "./cannon/cannonUtils";
 
 const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (isDemo, publicKey = '') => {
+const play = (isDemo, publicKey = "") => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -246,13 +246,13 @@ const play = (isDemo, publicKey = '') => {
       );
 
       let egg;
-      const eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-      const eggShape = new CANNON.Sphere(0.2);
-      eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
+      const eggBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
+      const eggShape = new CANNON.Sphere(0.5);
+      eggBody.addShape(eggShape, new CANNON.Vec3(0, 1, 0));
       eggBody.linearDamping = 0.95;
 
       let npc;
-      const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
+      const npcBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
       const npcShape = new CANNON.Sphere(1.0);
       npcBody.addShape(npcShape, new CANNON.Vec3(0, 1.0, 0));
       npcBody.linearDamping = 0.95;
@@ -262,11 +262,12 @@ const play = (isDemo, publicKey = '') => {
       const npcPos = [];
       for (let i = 0; i < 12; i++) {
         npcBodyClone[i] = new CANNON.Body({
-          mass: 1,
+          mass: 0,
           material: slipperyMaterial,
         });
-        npcShapeClone[i] = new CANNON.Sphere(0.5);
-        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 0.5, 0));
+
+        npcShapeClone[i] = new CANNON.Sphere(1.0);
+        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 1.0, 0));
         npcBodyClone[i].linearDamping = 0.95;
       }
 
@@ -524,7 +525,12 @@ const play = (isDemo, publicKey = '') => {
                   targetMesh = intersects[0];
 
                   if (walk) walk.kill();
-                  distance = colliderBody.position.distanceTo(targetMesh.point);
+                  const targetMeshPoint = new CANNON.Vec3(
+                    targetMesh.point.x,
+                    targetMesh.point.y,
+                    targetMesh.point.z
+                  );
+                  distance = colliderBody.position.distanceTo(targetMeshPoint);
 
                   walk = gsap.to(colliderBody.position, {
                     x: targetMesh.point.x,
@@ -542,7 +548,7 @@ const play = (isDemo, publicKey = '') => {
                   });
                   // Create the mesh
                   const ringMesh = new THREE.Mesh(ringGeometry, material);
-                  ringMesh.rotation.x = Math.PI / 2; //
+                  ringMesh.rotation.x = Math.PI / 2;
                   ringMesh.position.set(
                     targetMesh.point.x,
                     targetMesh.point.y,
@@ -566,6 +572,7 @@ const play = (isDemo, publicKey = '') => {
           let keyRight = false;
 
           window.addEventListener("keydown", (event) => {
+            event.preventDefault();
             if (!finished && !clicked) {
               if (walk) {
                 walk.kill();
@@ -604,7 +611,7 @@ const play = (isDemo, publicKey = '') => {
                 break;
             }
             setAction(animationActions[0], true);
-            mixer.update(delta);
+            clicked = false;
           });
 
           window.addEventListener("wheel", (event) => {
@@ -641,13 +648,115 @@ const play = (isDemo, publicKey = '') => {
 
           function animate() {
             requestAnimationFrame(animate);
+
             if (modelReady) {
+              const currentDirectionQuaternion = new THREE.Vector3(
+                0,
+                0,
+                1
+              ).applyQuaternion(modelMesh.quaternion);
+
+              if (keyLeft) {
+                const deltaLeftRotation =
+                  new THREE.Quaternion().setFromAxisAngle(
+                    rotationAxis,
+                    rotationSpeed
+                  );
+                targetQuaternion.multiplyQuaternions(
+                  deltaLeftRotation,
+                  targetQuaternion
+                );
+              } else if (keyRight) {
+                const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
+                  rotationAxis,
+                  -rotationSpeed
+                );
+                targetQuaternion.multiplyQuaternions(
+                  deltaRotation,
+                  targetQuaternion
+                );
+              }
+
+              if (keyUp) {
+                let flag = false;
+                for (let i = 0; i < 6; i++) {
+                  if (
+                    positions[i].x1 <
+                      colliderBody.position.x +
+                        3 * currentDirectionQuaternion.x * delta &&
+                    positions[i].x2 >
+                      colliderBody.position.x +
+                        3 * currentDirectionQuaternion.x * delta &&
+                    positions[i].z1 <
+                      colliderBody.position.z +
+                        3 * currentDirectionQuaternion.z * delta &&
+                    positions[i].z2 >
+                      colliderBody.position.z +
+                        3 * currentDirectionQuaternion.z * delta
+                  ) {
+                    flag = true;
+                    break;
+                  }
+                }
+                if (flag)
+                  colliderBody.position.set(
+                    colliderBody.position.x +
+                      3 * currentDirectionQuaternion.x * delta,
+                    colliderBody.position.y,
+                    colliderBody.position.z +
+                      3 * currentDirectionQuaternion.z * delta
+                  );
+              } else if (keyDown) {
+                let flag = false;
+                for (let i = 0; i < 6; i++) {
+                  if (
+                    positions[i].x1 <
+                      colliderBody.position.x -
+                        3 * currentDirectionQuaternion.x * delta &&
+                    positions[i].x2 >
+                      colliderBody.position.x -
+                        3 * currentDirectionQuaternion.x * delta &&
+                    positions[i].z1 <
+                      colliderBody.position.z -
+                        3 * currentDirectionQuaternion.z * delta &&
+                    positions[i].z2 >
+                      colliderBody.position.z -
+                        3 * currentDirectionQuaternion.z * delta
+                  ) {
+                    flag = true;
+                    break;
+                  }
+                }
+                if (flag)
+                  colliderBody.position.set(
+                    colliderBody.position.x -
+                      3 * currentDirectionQuaternion.x * delta,
+                    colliderBody.position.y,
+                    colliderBody.position.z -
+                      3 * currentDirectionQuaternion.z * delta
+                  );
+              }
+
+              if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
+                setAction(animationActions[1], true);
+                mixer.update(delta);
+              } else {
+                setAction(animationActions[0], true);
+                mixer.update(delta);
+              }
               const p = characterCollider.position;
               p.y -= 1;
               modelMesh.position.y = characterCollider.position.y;
               const rotationMatrix = new THREE.Matrix4();
-              if (targetMesh)
-                distance = colliderBody.position.distanceTo(targetMesh.point);
+
+              if (targetMesh) {
+                const targetMeshPoint = new CANNON.Vec3(
+                  targetMesh.point.x,
+                  targetMesh.point.y,
+                  targetMesh.point.z
+                );
+                distance = colliderBody.position.distanceTo(targetMeshPoint);
+              }
               if (distance > 1) {
                 if (targetMesh && !crash) {
                   rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up);
@@ -662,112 +771,11 @@ const play = (isDemo, publicKey = '') => {
               }
               modelMesh.position.lerp(characterCollider.position, 0.1);
             }
-
-            const currentDirectionQuaternion = new THREE.Vector3(
-              0,
-              0,
-              1
-            ).applyQuaternion(modelMesh.quaternion);
-
-            if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
-              setAction(animationActions[1], true);
-              mixer.update(delta);
-            } else {
-              setAction(animationActions[0], true);
-              mixer.update(delta);
-            }
-
-            if (keyUp) {
-              let flag = false;
-              for (let i = 0; i < 6; i++) {
-                if (
-                  positions[i].x1 <
-                    colliderBody.position.x +
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].x2 >
-                    colliderBody.position.x +
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].z1 <
-                    colliderBody.position.z +
-                      3 * currentDirectionQuaternion.z * delta &&
-                  positions[i].z2 >
-                    colliderBody.position.z +
-                      3 * currentDirectionQuaternion.z * delta
-                ) {
-                  flag = true;
-                  break;
-                }
-              }
-              if (flag)
-                colliderBody.position.set(
-                  colliderBody.position.x +
-                    3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z +
-                    3 * currentDirectionQuaternion.z * delta
-                );
-            } else if (keyDown) {
-              let flag = false;
-              for (let i = 0; i < 6; i++) {
-                if (
-                  positions[i].x1 <
-                    colliderBody.position.x -
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].x2 >
-                    colliderBody.position.x -
-                      3 * currentDirectionQuaternion.x * delta &&
-                  positions[i].z1 <
-                    colliderBody.position.z -
-                      3 * currentDirectionQuaternion.z * delta &&
-                  positions[i].z2 >
-                    colliderBody.position.z -
-                      3 * currentDirectionQuaternion.z * delta
-                ) {
-                  flag = true;
-                  break;
-                }
-              }
-              if (flag)
-                colliderBody.position.set(
-                  colliderBody.position.x -
-                    3 * currentDirectionQuaternion.x * delta,
-                  colliderBody.position.y,
-                  colliderBody.position.z -
-                    3 * currentDirectionQuaternion.z * delta
-                );
-            }
-            if (keyLeft) {
-              const deltaLeftRotation = new THREE.Quaternion().setFromAxisAngle(
-                rotationAxis,
-                rotationSpeed
-              );
-              targetQuaternion.multiplyQuaternions(
-                deltaLeftRotation,
-                targetQuaternion
-              );
-
-              // Apply the target quaternion to the modelMesh
-              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
-              }
-            } else if (keyRight) {
-              const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
-                rotationAxis,
-                -rotationSpeed
-              );
-              targetQuaternion.multiplyQuaternions(
-                deltaRotation,
-                targetQuaternion
-              );
-
-              // Apply the target quaternion to the modelMesh
-              if (modelMesh && !modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(targetQuaternion, 0.1);
-              }
-            }
+            var fixedTimeStep = 1.0 / 60.0; // seconds
+            var maxSubSteps = 3;
 
             delta = Math.min(clock.getDelta(), 0.1);
-            world.step(delta);
+            world.step(fixedTimeStep, delta, maxSubSteps);
 
             characterCollider.position.set(
               colliderBody.position.x,
