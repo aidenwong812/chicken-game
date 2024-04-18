@@ -89,10 +89,8 @@ const play = (isDemo, publicKey = "") => {
   scoreBoard.style.fontFamily = "Monospace";
   scoreBoard.append(timer);
   scoreBoard.append(scoreDiv);
-
   const plusText = document.createElement("img");
   plusText.style.position = "absolute";
-  //plusText.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
   plusText.style.width = "100px";
   plusText.src = "images/plus.png";
   plusText.style.top = "40%";
@@ -304,11 +302,9 @@ const play = (isDemo, publicKey = "") => {
       let modelReady = false;
       let modelMesh: THREE.Object3D;
       let targetMesh: THREE.Intersection;
-
       const animationActions: THREE.AnimationAction[] = [];
       let activeAction: THREE.AnimationAction;
       let lastAction: THREE.AnimationAction;
-
       const mapModel = gltf.scene;
       scene.add(mapModel);
 

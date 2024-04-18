@@ -2,7 +2,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "./App.css";
 import { play } from "./game";
 
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const getProvider = () => {
@@ -21,9 +21,7 @@ function App() {
     if (demo) {
       play(true);
       document.getElementById("landing").classList.add("hidden");
-    }
-
-    else {
+    } else {
       const provider = getProvider(); // see "Detecting the Provider"
       provider
         .connect()
@@ -34,8 +32,8 @@ function App() {
           }
         })
         .catch((err) => {
-          console.log(err)
-          toast.error("Please create wallet")
+          console.log(err);
+          toast.error("Please create wallet");
         });
     }
   };
@@ -52,11 +50,6 @@ function App() {
         loop
         className="w-full h-full object-fill"
       ></video>
-
-      <p className="absolute top-0 left-1/2 m-0 p-[20px] text-white bg-[#01010180] text-[2em] font-mono -translate-x-1/2 translate-y-0">
-        PLAY 2 EARN COMING 4-12-2024 <br />
-        NEW 3D GAME COMING 4-12-2024
-      </p>
 
       <div className="absolute w-full h-1/2 bottom-1/2 left-1/2 flex max-md:flex-col items-center text-center justify-evenly -translate-x-1/2 translate-y-1/2">
         <div className="w-[40%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
