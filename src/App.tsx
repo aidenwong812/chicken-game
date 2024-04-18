@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import './App.css'
-import { play } from './game'
+import { ToastContainer, toast } from "react-toastify";
+import "./App.css";
+import { play } from "./game";
+
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const [playDemo, setPlayDemo] = useState(false)
-
   const getProvider = () => {
-    if ('phantom' in window) {
+    if ("phantom" in window) {
       const provider = (window as any).phantom?.solana;
 
       if (provider?.isPhantom) {
@@ -14,45 +14,75 @@ function App() {
       }
     }
 
-    window.open('https://phantom.app/', '_blank');
+    window.open("https://phantom.app/", "_blank");
   };
 
-  const handleGame = async () => {
-    const provider = getProvider(); // see "Detecting the Provider"
+  const handleGame = async (demo) => {
+    if (demo) {
+      play(true);
+      document.getElementById("landing").classList.add("hidden");
+    }
 
-    provider.connect()
-      .then(({ publicKey }) => {
-        if (publicKey) {
-          play(publicKey)
-          setPlayDemo(true)
-        }
-      })
-      .catch()
-  }
+    else {
+      const provider = getProvider(); // see "Detecting the Provider"
+      provider
+        .connect()
+        .then(({ publicKey }) => {
+          if (publicKey.toBase58()) {
+            play(false, publicKey.toBase58());
+            document.getElementById("landing").classList.add("hidden");
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+          toast.error("Please create wallet")
+        });
+    }
+  };
 
   return (
-    <div className={`w-screen h-screen fixed top-0 left-0 z-[9999] bg-[#DDD] ${playDemo ? 'hidden' : ''}`}>
-      <video src='videos/landing.mp4' autoPlay muted loop className='w-full h-full object-fill'></video>
+    <div
+      className={`w-screen h-screen fixed top-0 left-0 z-[9999] bg-[#DDD]`}
+      id="landing"
+    >
+      <video
+        src="videos/landing.mp4"
+        autoPlay
+        muted
+        loop
+        className="w-full h-full object-fill"
+      ></video>
 
-      <p className='absolute top-0 left-1/2 m-0 p-[20px] text-white bg-[#01010180] text-[2em] font-mono -translate-x-1/2 translate-y-0'>
+      <p className="absolute top-0 left-1/2 m-0 p-[20px] text-white bg-[#01010180] text-[2em] font-mono -translate-x-1/2 translate-y-0">
         PLAY 2 EARN COMING 4-12-2024 <br />
         NEW 3D GAME COMING 4-12-2024
       </p>
 
-      <div className='absolute w-full h-1/2 bottom-1/2 left-1/2 flex items-center text-center justify-evenly -translate-x-1/2 translate-y-1/2'>
-        <div className='w-[40%] h-[190px] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]'>
-          <img src='images/Chick-City.gif' className='w-[80%] rounded-[30px] cursor-pointer' />
-        </div>
-        <div className='w-[20%] h-[190px] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]'>
+      <div className="absolute w-full h-1/2 bottom-1/2 left-1/2 flex max-md:flex-col items-center text-center justify-evenly -translate-x-1/2 translate-y-1/2">
+        <div className="w-[40%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
           <img
-            src='images/Play-Demo.gif'
-            className='w-[80%] rounded-[30px] cursor-pointer'
-            onClick={handleGame}
+            src="images/Chick-City.gif"
+            className="w-[80%] rounded-[30px] cursor-pointer"
+          />
+        </div>
+        <div className="w-[20%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
+          <img
+            src="images/Play-Demo.gif"
+            className="w-[80%] rounded-[30px] cursor-pointer"
+            onClick={() => handleGame(true)}
+          />
+        </div>
+        <div className="w-[20%] h-[20vh] mb-4 max-md:w-[80%] flex items-center justify-center aspect-[1.618] bg-[#01010180] rounded-[30px]">
+          <img
+            src="images/Play-Game.gif"
+            className="w-[80%] rounded-[30px] cursor-pointer"
+            onClick={() => handleGame(false)}
           />
         </div>
       </div>
+      <ToastContainer />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

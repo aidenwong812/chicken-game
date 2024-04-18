@@ -2,13 +2,16 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 import * as CANNON from "cannon-es";
 import gsap from "gsap";
 import CircleProgress from "js-circle-progress";
+import axios from "axios";
 import CannonUtils from "./cannon/cannonUtils";
+
+const SERVER_ENDPOINT = import.meta.env.VITE_SERVER_ENDPOINT;
 //circle progress bar
-const play = (publicKey) => {
-  console.log(publicKey);
+const play = (isDemo, publicKey = "") => {
   const cp = new CircleProgress({
     min: 0,
     max: 100,
@@ -97,6 +100,29 @@ const play = (publicKey) => {
   plusText.style.transition = "all 0.5s ease";
   document.body.appendChild(plusText);
 
+  const congratulation = document.createElement("img");
+  congratulation.src = "images/congratulations.png";
+  congratulation.style.width = "50%";
+  congratulation.style.display = "none";
+  congratulation.style.transition = "all 0.5s ease";
+  instructions.append(congratulation);
+
+  const youEarned = document.createElement("div");
+  youEarned.style.width = "60%";
+  youEarned.style.fontSize = "4vw";
+  youEarned.style.fontWeight = "Bold";
+  youEarned.style.display = "none";
+  youEarned.style.paddingBottom = "20px";
+  youEarned.innerHTML = "You earned 90 SOFT COQ INU";
+  instructions.append(youEarned);
+
+  const returnButton = document.createElement("div");
+  returnButton.style.display = "none";
+  returnButton.classList.add("Btn");
+
+  returnButton.innerHTML = "Return to Menu";
+  instructions.append(returnButton);
+
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath("draco/");
   const gltfLoader = new GLTFLoader();
@@ -108,7 +134,7 @@ const play = (publicKey) => {
   const positions = [
     {
       x1: -1.5,
-      x2: -1.5,
+      x2: 1.5,
       z1: -81,
       z2: 81,
     },
@@ -119,8 +145,8 @@ const play = (publicKey) => {
       z2: 81,
     },
     {
-      x1: -63,
-      x2: -67,
+      x1: -67,
+      x2: -63,
       z1: -81,
       z2: 81,
     },
@@ -133,20 +159,21 @@ const play = (publicKey) => {
     {
       x1: -67,
       x2: 67,
-      z1: -1,
+      z1: -2,
       z2: 1,
     },
     {
       x1: -67,
       x2: 67,
-      z1: -77,
-      z2: -81,
+      z1: -81,
+      z2: -77,
     },
   ];
 
   gltfLoader.load(
     "models/map.glb",
     (gltf) => {
+      let finished = false;
       let clicked = true; // navigate click event
       let min = 30;
       let sec = 0;
@@ -194,6 +221,11 @@ const play = (publicKey) => {
       renderer.shadowMap.type = THREE.VSMShadowMap; // PCFShadowMap
       document.body.appendChild(renderer.domElement);
 
+      returnButton.addEventListener("click", () => {
+        window.location.reload();
+        return true;
+      });
+
       const raycaster = new THREE.Raycaster();
       const world = new CANNON.World();
       world.gravity.set(0, -9.82, 0);
@@ -212,18 +244,30 @@ const play = (publicKey) => {
       );
 
       let egg;
-      const eggBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-      const eggShape = new CANNON.Sphere(0.2);
-      eggBody.addShape(eggShape, new CANNON.Vec3(0, 0.5, 0));
+      const eggBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
+      const eggShape = new CANNON.Sphere(0.5);
+      eggBody.addShape(eggShape, new CANNON.Vec3(0, 1, 0));
       eggBody.linearDamping = 0.95;
 
       let npc;
-      const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-      const npcShape = new CANNON.Sphere(0.5);
-      npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
+      const npcBody = new CANNON.Body({ mass: 0, material: slipperyMaterial });
+      const npcShape = new CANNON.Sphere(1.0);
+      npcBody.addShape(npcShape, new CANNON.Vec3(0, 1.0, 0));
       npcBody.linearDamping = 0.95;
 
-      // let npcBodies: Array<any> = [];
+      const npcBodyClone = [];
+      const npcShapeClone = [];
+      const npcPos = [];
+      for (let i = 0; i < 12; i++) {
+        npcBodyClone[i] = new CANNON.Body({
+          mass: 0,
+          material: slipperyMaterial,
+        });
+
+        npcShapeClone[i] = new CANNON.Sphere(1.0);
+        npcBodyClone[i].addShape(npcShapeClone[i], new CANNON.Vec3(0, 1.0, 0));
+        npcBodyClone[i].linearDamping = 0.95;
+      }
 
       gltfLoader.load("models/egg.glb", (gltf) => {
         gltf.scene.traverse(function (child) {
@@ -255,8 +299,6 @@ const play = (publicKey) => {
       });
 
       let mixer: THREE.AnimationMixer;
-      const npcMixer: Array<THREE.AnimationMixer> = [];
-      const npcs: Array<any> = [];
       let modelReady = false;
       let modelMesh: THREE.Object3D;
       let targetMesh: THREE.Intersection;
@@ -356,33 +398,26 @@ const play = (publicKey) => {
         npc.children[0].rotation.x = Math.PI * 2;
         npc.children[0].rotation.y = Math.PI;
         npcBody.position.set(0, 0, 38);
+        npcPos.push([0, 0, 38]);
         scene.add(npc);
         world.addBody(npcBody);
 
-        // for (let i = 0; i < 10; i++) {
-        //   const road = positions[Math.floor(Math.random() * 5)]
-        //   const newX = Math.random() * (road.x2 - road.x1) + road.x1
-        //   const newZ = Math.random() * (road.z2 - road.z1) + road.z1
+        // Assuming you have initialized your scene, world, positions, npc, slipperyMaterial, and SkeletonUtils
 
-        //   const cloneNpc = SkeletonUtils.clone(npc)
-        //   cloneNpc.children[0].scale.set(1, 1, 1)
-        //   cloneNpc.children[0].position.set(newX, 0, newZ)
-        //   cloneNpc.rotation.x = Math.PI * 2
-        //   cloneNpc.rotation.y = Math.PI
+        for (let i = 0; i < 12; i++) {
+          const road = positions[Math.floor(i / 2)];
+          const newX = Math.random() * (road.x2 - road.x1) + road.x1;
+          const newZ = Math.random() * (road.z2 - road.z1) + road.z1;
 
-        //   const npcBody = new CANNON.Body({ mass: 1, material: slipperyMaterial });
-        //   const npcShape = new CANNON.Sphere(0.6)
-        //   npcBody.addShape(npcShape, new CANNON.Vec3(0, 0.5, 0));
-        //   npcBody.linearDamping = 0.95
-        //   npcBody.position.set(newX, 0, newZ)
+          const cloneNpc = SkeletonUtils.clone(npc);
+          cloneNpc.children[0].scale.set(1, 1, 1);
+          cloneNpc.children[0].position.set(newX, 0, newZ);
 
-        //   scene.add(cloneNpc)
-        //   world.addBody(npcBody)
-
-        //   npcs.push(cloneNpc)
-        //   npcBodies.push(npcBody)
-
-        // }
+          npcBodyClone[i].position.set(newX, 0, newZ);
+          npcPos.push([newX, 0, newZ]);
+          scene.add(cloneNpc);
+          world.addBody(npcBodyClone[i]);
+        }
       });
 
       gltfLoader.load(
@@ -439,6 +474,9 @@ const play = (publicKey) => {
             gsap.to(camera.position, { x: 0, y: 5, z: -20, duration: 2 });
           };
 
+          // Add a variable to track whether the mouse or keyboard control is active
+          let controlActive = "none"; // can be 'none', 'mouse', or 'keyboard'
+
           const setAction = (
             toAction: THREE.AnimationAction,
             loop: boolean
@@ -462,65 +500,147 @@ const play = (publicKey) => {
 
           const mouse = new THREE.Vector2();
 
-          renderer.domElement.addEventListener("mousedown", (event) => {
-            event.preventDefault();
-            if (!clicked) {
-              // Set the mouse coordinates (normalized between -1 and 1)
-              mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-              mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+          window.addEventListener(
+            "mousedown",
+            (event) => {
+              event.preventDefault();
 
-              // Set the origin of the raycaster to the camera position
-              raycaster.setFromCamera(mouse, camera);
-              const intersects = raycaster.intersectObjects(scene.children);
-              if (intersects.length > 0) {
-                if (
-                  intersects[0].object.name == "Ground" ||
-                  intersects[0].object.name == "Rectangle010" ||
-                  intersects[0].object.name == "Rectangle015" ||
-                  intersects[0].object.name == "Rectangle001" ||
-                  intersects[0].object.name == "Rectangle025" ||
-                  intersects[0].object.name == "Object_2"
-                ) {
-                  //mouse pointer mesh
-                  crash = false;
-                  targetMesh = intersects[0];
+              if (!clicked) {
+                if (controlActive === "keyboard") return;
+                // Set the mouse coordinates (normalized between -1 and 1)
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-                  if (walk) walk.kill();
-                  distance = colliderBody.position.distanceTo(targetMesh.point);
+                // Set the origin of the raycaster to the camera position
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(scene.children);
+                if (intersects.length > 0) {
+                  if (
+                    intersects[0].object.name == "Ground" ||
+                    intersects[0].object.name == "Rectangle010" ||
+                    intersects[0].object.name == "Rectangle015" ||
+                    intersects[0].object.name == "Rectangle001" ||
+                    intersects[0].object.name == "Rectangle025" ||
+                    intersects[0].object.name == "Object_2"
+                  ) {
+                    //mouse pointer mesh
+                    crash = false;
+                    targetMesh = intersects[0];
 
-                  walk = gsap.to(colliderBody.position, {
-                    x: targetMesh.point.x,
-                    // y: targetMesh.point.y,
-                    z: targetMesh.point.z,
-                    duration: distance / 2,
-                  });
+                    if (walk) walk.kill();
+                    const targetMeshPoint = new CANNON.Vec3(
+                      targetMesh.point.x,
+                      targetMesh.point.y,
+                      targetMesh.point.z
+                    );
+                    distance =
+                      colliderBody.position.distanceTo(targetMeshPoint);
 
-                  //mouse pointer mesh
-                  const ringGeometry = new THREE.RingGeometry(0.1, 0.2);
-                  // Define the material
-                  const material = new THREE.MeshBasicMaterial({
-                    color: "#ff66cc",
-                    side: THREE.DoubleSide,
-                  });
-                  // Create the mesh
-                  const ringMesh = new THREE.Mesh(ringGeometry, material);
-                  ringMesh.rotation.x = Math.PI / 2; //
-                  ringMesh.position.set(
-                    targetMesh.point.x,
-                    targetMesh.point.y,
-                    targetMesh.point.z
-                  );
-                  scene.add(ringMesh);
-                  gsap.to(ringMesh.scale, {
-                    x: 0,
-                    y: 0,
-                    z: 0,
-                    duration: 1,
-                  });
+                    walk = gsap.to(colliderBody.position, {
+                      x: targetMesh.point.x,
+                      // y: targetMesh.point.y,
+                      z: targetMesh.point.z,
+                      duration: distance / 2,
+                      onComplete: () => {
+                        clicked = false;
+                      },
+                    });
+
+                    //mouse pointer mesh
+                    const ringGeometry = new THREE.RingGeometry(0.1, 0.2);
+                    // Define the material
+                    const material = new THREE.MeshBasicMaterial({
+                      color: "#ff66cc",
+                      side: THREE.DoubleSide,
+                    });
+                    // Create the mesh
+                    const ringMesh = new THREE.Mesh(ringGeometry, material);
+                    ringMesh.rotation.x = Math.PI / 2;
+                    ringMesh.position.set(
+                      targetMesh.point.x,
+                      targetMesh.point.y,
+                      targetMesh.point.z
+                    );
+                    scene.add(ringMesh);
+                    gsap.to(ringMesh.scale, {
+                      x: 0,
+                      y: 0,
+                      z: 0,
+                      duration: 1,
+                    });
+                  }
                 }
+                controlActive = "mouse";
               }
-            }
-          });
+              // Explicitly set focus back to the window if it's lost
+              if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
+              }
+              window.focus();
+            },
+            false
+          );
+
+          let keyUp = false;
+          let keyDown = false;
+          let keyLeft = false;
+          let keyRight = false;
+
+          window.addEventListener(
+            "keydown",
+            (event) => {
+              event.preventDefault();
+
+              if (!finished) {
+                if (controlActive === "mouse") return;
+                if (walk) {
+                  walk.kill();
+                }
+                switch (event.key) {
+                  case "ArrowUp":
+                    keyUp = true;
+                    break;
+                  case "ArrowDown":
+                    keyDown = true;
+                    break;
+                  case "ArrowLeft":
+                    keyLeft = true;
+                    break;
+                  case "ArrowRight":
+                    keyRight = true;
+                    break;
+                }
+                controlActive = "keyboard";
+              }
+            },
+            false
+          );
+
+          window.addEventListener(
+            "keyup",
+            (event) => {
+              event.preventDefault();
+              switch (event.key) {
+                case "ArrowUp":
+                  keyUp = false;
+                  break;
+                case "ArrowDown":
+                  keyDown = false;
+                  break;
+                case "ArrowLeft":
+                  keyLeft = false;
+                  break;
+                case "ArrowRight":
+                  keyRight = false;
+                  break;
+              }
+              setAction(animationActions[0], true);
+              if (!keyUp && !keyDown && !keyLeft && !keyRight) {
+                controlActive = "none";
+              }
+            },
+            false
+          );
 
           window.addEventListener("wheel", (event) => {
             event.preventDefault();
@@ -534,7 +654,6 @@ const play = (publicKey) => {
               camera.position.z = 2;
             else if (camera.position.z > -2 && camera.position.z < 0)
               camera.position.z = -2;
-            console.log("camera.position.z :", camera.position.z, event.deltaY);
             render(); // Make sure to call render to update the scene after adjusting the zoom
           });
 
@@ -552,54 +671,160 @@ const play = (publicKey) => {
           let delta = 0;
           let distance = 0;
 
+          const rotationSpeed = (Math.PI / 180) * 5;
+          const rotationAxis = new THREE.Vector3(0, 1, 0); // Rotate around the y-axis
+
           function animate() {
             requestAnimationFrame(animate);
+            // If there's a key pressed, handle keyboard control
+            if (keyUp || keyDown || keyLeft || keyRight) {
+              // Allow keyboard control to proceed
+              controlActive = "keyboard";
+            }
+            // release the control lock
+            if (
+              !keyUp &&
+              !keyDown &&
+              !keyLeft &&
+              !keyRight &&
+              controlActive === "keyboard"
+            ) {
+              controlActive = "none";
+            }
+
             if (modelReady) {
+              const currentDirectionQuaternion = new THREE.Vector3(
+                0,
+                0,
+                1
+              ).applyQuaternion(modelMesh.quaternion);
+              if (controlActive === "keyboard") {
+                if (keyLeft) {
+                  const deltaLeftRotation =
+                    new THREE.Quaternion().setFromAxisAngle(
+                      rotationAxis,
+                      rotationSpeed
+                    );
+                  targetQuaternion.multiplyQuaternions(
+                    deltaLeftRotation,
+                    targetQuaternion
+                  );
+                } else if (keyRight) {
+                  const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
+                    rotationAxis,
+                    -rotationSpeed
+                  );
+                  targetQuaternion.multiplyQuaternions(
+                    deltaRotation,
+                    targetQuaternion
+                  );
+                } else if (keyUp) {
+                  let flag = false;
+                  for (let i = 0; i < 6; i++) {
+                    if (
+                      positions[i].x1 <
+                        colliderBody.position.x +
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].x2 >
+                        colliderBody.position.x +
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].z1 <
+                        colliderBody.position.z +
+                          4 * currentDirectionQuaternion.z * delta &&
+                      positions[i].z2 >
+                        colliderBody.position.z +
+                          4 * currentDirectionQuaternion.z * delta
+                    ) {
+                      flag = true;
+                      break;
+                    }
+                  }
+                  if (flag)
+                    colliderBody.position.set(
+                      colliderBody.position.x +
+                        4 * currentDirectionQuaternion.x * delta,
+                      colliderBody.position.y,
+                      colliderBody.position.z +
+                        4 * currentDirectionQuaternion.z * delta
+                    );
+                } else if (keyDown) {
+                  let flag = false;
+                  for (let i = 0; i < 6; i++) {
+                    if (
+                      positions[i].x1 <
+                        colliderBody.position.x -
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].x2 >
+                        colliderBody.position.x -
+                          4 * currentDirectionQuaternion.x * delta &&
+                      positions[i].z1 <
+                        colliderBody.position.z -
+                          4 * currentDirectionQuaternion.z * delta &&
+                      positions[i].z2 >
+                        colliderBody.position.z -
+                          4 * currentDirectionQuaternion.z * delta
+                    ) {
+                      flag = true;
+                      break;
+                    }
+                  }
+                  if (flag)
+                    colliderBody.position.set(
+                      colliderBody.position.x -
+                        4 * currentDirectionQuaternion.x * delta,
+                      colliderBody.position.y,
+                      colliderBody.position.z -
+                        4 * currentDirectionQuaternion.z * delta
+                    );
+                }
+                if (!modelMesh.quaternion.equals(targetQuaternion)) {
+                  modelMesh.quaternion.rotateTowards(
+                    targetQuaternion,
+                    delta * 10
+                  );
+                }
+                modelMesh.position.lerp(characterCollider.position, 0.1);
+              }
+
+              if (distance >= 1 || keyUp || keyDown || keyLeft || keyRight) {
+                setAction(animationActions[1], true);
+                mixer.update(delta);
+              } else {
+                setAction(animationActions[0], true);
+                mixer.update(delta);
+              }
               const p = characterCollider.position;
               p.y -= 1;
               modelMesh.position.y = characterCollider.position.y;
               const rotationMatrix = new THREE.Matrix4();
-              if (targetMesh)
-                distance = colliderBody.position.distanceTo(targetMesh.point);
-              if (distance > 1) {
-                if (targetMesh && !crash) {
-                  rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up);
-                  targetQuaternion.setFromRotationMatrix(rotationMatrix);
+
+              if (targetMesh && controlActive === "mouse") {
+                const targetMeshPoint = new CANNON.Vec3(
+                  targetMesh.point.x,
+                  targetMesh.point.y,
+                  targetMesh.point.z
+                );
+                distance = colliderBody.position.distanceTo(targetMeshPoint);
+                if (distance > 1) {
+                  if (targetMesh && !crash) {
+                    rotationMatrix.lookAt(p, modelMesh.position, modelMesh.up);
+                    targetQuaternion.setFromRotationMatrix(rotationMatrix);
+                  }
                 }
+                if (!modelMesh.quaternion.equals(targetQuaternion)) {
+                  modelMesh.quaternion.rotateTowards(
+                    targetQuaternion,
+                    delta * 10
+                  );
+                }
+                modelMesh.position.lerp(characterCollider.position, 0.1);
               }
-              if (!modelMesh.quaternion.equals(targetQuaternion)) {
-                modelMesh.quaternion.rotateTowards(
-                  targetQuaternion,
-                  delta * 10
-                );
-              }
-              modelMesh.position.lerp(characterCollider.position, 0.1);
             }
-
-            if (distance >= 1) {
-              setAction(animationActions[1], true);
-              mixer.update(delta);
-            } else {
-              setAction(animationActions[0], true);
-              mixer.update(delta);
-            }
-
-            if (npcMixer.length > 0) {
-              npcMixer.forEach((one) => one.update(delta));
-            }
-
-            if (npcs.length > 0) {
-              npcs.forEach((one) => {
-                one.position.set(
-                  one.position.x,
-                  one.position.y,
-                  one.position.z - 2.5 * delta
-                );
-              });
-            }
+            var fixedTimeStep = 1.0 / 60.0; // seconds
+            var maxSubSteps = 3;
 
             delta = Math.min(clock.getDelta(), 0.1);
-            world.step(delta);
+            world.step(fixedTimeStep, delta, maxSubSteps);
 
             characterCollider.position.set(
               colliderBody.position.x,
@@ -628,19 +853,53 @@ const play = (publicKey) => {
             renderer.render(scene, camera);
           }
 
+          // Function to calculate the distance between two points
+          function calculateDistance(x1, z1, x2, z2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(z2 - z1, 2));
+          }
+
           colliderBody.addEventListener("collide", function (e: any) {
-            console.log("colliderBody collided with body:", e.contact.bj.id);
             crash = true;
             if (walk) walk.kill();
             if (e.contact.bj.id === 0) {
               world.removeBody(eggBody);
 
-              const road = positions[Math.floor(Math.random() * 5)];
-              const newX = Math.random() * (road.x2 - road.x1) + road.x1;
-              const newZ = Math.random() * (road.z2 - road.z1) + road.z1;
+              // Function to generate newX and newZ not within distance d of any position in pos array
+              let newX, newZ;
+              let withinDistance = true;
 
+              while (withinDistance) {
+                // Generate random coordinates
+                const road = positions[Math.floor(Math.random() * 5)];
+                newX = Math.random() * (road.x2 - road.x1) + road.x1;
+                newZ = Math.random() * (road.z2 - road.z1) + road.z1;
+
+                // Check if the new coordinates are within distance d of any position in pos array
+                withinDistance = npcPos.some(
+                  (position) =>
+                    calculateDistance(newX, newZ, position[0], position[2]) < 5
+                );
+                if (
+                  calculateDistance(
+                    newX,
+                    newZ,
+                    eggBody.position.x,
+                    eggBody.position.z
+                  ) < 5
+                )
+                  withinDistance = true;
+                if (
+                  calculateDistance(
+                    newX,
+                    newZ,
+                    colliderBody.position.x,
+                    colliderBody.position.z
+                  ) < 5
+                )
+                  withinDistance = true;
+              }
               egg.children[0].position.set(newX, 0.3, newZ);
-              eggBody.position.set(newX, 10, newZ);
+              eggBody.position.set(newX, 0.3, newZ);
 
               // Add back to world after a delay
               setTimeout(() => {
@@ -665,89 +924,100 @@ const play = (publicKey) => {
               count += 1;
               score.innerHTML = count.toString();
             }
-            if (e.contact.bj.id === 1) {
-              count = 0;
-              score.innerHTML = count.toString();
-              text.innerHTML = "Game Over";
-              instructions.style.display = "flex";
-              blocker.style.display = "block";
-              avatar.position.set(0, 1.72, 0);
-              characterCollider.position.set(0, 3, 0);
-              colliderBody.position.set(0, 3, 0);
-            }
           });
 
           animate();
 
           instructions.addEventListener("click", function () {
-            if (clicked == false) {
-              clicked = true;
-              gsap.to(camera.position, {
-                x: 0,
-                y: 40,
-                z: -50,
-                duration: 4,
-                onStart: () => {
-                  orbitControls.enabled = false;
-                },
-                onUpdate: () => {
-                  orbitControls.enabled = false;
-                },
-                onComplete: () => {
-                  orbitControls.enabled = true;
-                  orbitControls.autoRotate = true;
-                },
-              });
-            } else {
-              clicked = false;
-              const timerCount = setInterval(function () {
-                if (sec <= 0) {
-                  if (min-- <= 0) {
-                    min = 30;
-                    sec = 0;
-                    clearInterval(timerCount);
-                    text.innerHTML = "Game Over";
-                    instructions.style.display = "flex";
-                    blocker.style.display = "block";
-                    avatar.position.set(0, 1.72, 0);
-                    characterCollider.position.set(0, 3, 0);
-                    colliderBody.position.set(0, 3, 0);
-                  } else sec = 59;
-                } else {
-                  sec--;
-                }
-                timer.innerHTML = min.toString() + ":" + sec.toString();
-              }, 1000);
-              instructions.style.display = "none";
-              blocker.style.display = "none";
-              document.body.appendChild(scoreBoard);
-              gsap.to(camera.position, {
-                x: 0,
-                y: 7,
-                z: -2,
-                duration: 4,
-                onStart: () => {
-                  orbitControls.enabled = false;
-                },
-                onUpdate: () => {
-                  orbitControls.enabled = false;
-                },
-                onComplete: () => {
-                  orbitControls.enabled = false;
-                  orbitControls.autoRotate = false;
-                },
-              });
+            if (!finished) {
+              if (clicked == false) {
+                clicked = true;
+
+                gsap.to(camera.position, {
+                  x: 0,
+                  y: 40,
+                  z: -50,
+                  duration: 4,
+                  onStart: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onUpdate: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onComplete: () => {
+                    orbitControls.enabled = true;
+                    orbitControls.autoRotate = true;
+                  },
+                });
+              } else {
+                const timerCount = setInterval(function () {
+                  if (sec <= 0) {
+                    if (min-- <= 0) {
+                      finished = true;
+                      min = 0;
+                      sec = 0;
+                      clearInterval(timerCount);
+                      text.style.display = "none";
+                      instructions.style.display = "flex";
+                      blocker.style.display = "block";
+                      returnButton.style.display = "flex";
+                      youEarned.style.display = "block";
+                      youEarned.innerHTML = `You earned ${
+                        isDemo ? count : (count / 3).toFixed(2)
+                      } ${isDemo ? "EGG(S)" : "SOFT COQ INU"}`;
+                      congratulation.style.display = "block";
+                      avatar.position.set(0, 1.72, 0);
+                      characterCollider.position.set(0, 3, 0);
+                      colliderBody.position.set(0, 3, 0);
+                      if (count && !isDemo) {
+                        axios.post(SERVER_ENDPOINT, {
+                          address: publicKey,
+                          amount: count,
+                        });
+                      }
+                      count = 0;
+                    } else {
+                      sec = 59;
+                      clicked = false;
+                    }
+                  } else {
+                    sec--;
+                    clicked = false;
+                  }
+
+                  timer.innerHTML =
+                    min.toString().padStart(2, "0") +
+                    ":" +
+                    sec.toString().padStart(2, "0");
+                }, 1000);
+                instructions.style.display = "none";
+                blocker.style.display = "none";
+                document.body.appendChild(scoreBoard);
+                gsap.to(camera.position, {
+                  x: 0,
+                  y: 7,
+                  z: -2,
+                  duration: 4,
+                  onStart: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onUpdate: () => {
+                    orbitControls.enabled = false;
+                  },
+                  onComplete: () => {
+                    orbitControls.enabled = false;
+                    orbitControls.autoRotate = false;
+                  },
+                });
+              }
             }
           });
         },
-        () => {
-          console.log("avatar_glb has been loaded");
-        },
+        () => {},
         (error) => {
           console.log(error);
         }
       );
-      console.log("Camera.position: ", camera.position);
     },
     (xhr) => {
       cp.value = (xhr.loaded / 76807588) * 100;
@@ -766,6 +1036,7 @@ const play = (publicKey) => {
       console.log(error);
     }
   );
+  return false;
 };
 
 export { play };
