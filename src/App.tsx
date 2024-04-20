@@ -17,6 +17,8 @@ function App() {
         if (publicKey) {
           play(false, publicKey.toBase58());
           document.getElementById("landing").classList.add("hidden");
+        } else {
+          toast.error("Please create wallet");
         }
       } catch (err) {
         console.log(err);
