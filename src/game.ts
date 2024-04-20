@@ -820,8 +820,8 @@ const play = (isDemo, publicKey = "") => {
                 modelMesh.position.lerp(characterCollider.position, 0.1);
               }
             }
-            var fixedTimeStep = 1.0 / 60.0; // seconds
-            var maxSubSteps = 3;
+            const fixedTimeStep = 1.0 / 60.0; // seconds
+            const maxSubSteps = 3;
 
             delta = Math.min(clock.getDelta(), 0.1);
             world.step(fixedTimeStep, delta, maxSubSteps);

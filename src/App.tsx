@@ -3,38 +3,25 @@ import "./App.css";
 import { play } from "./game";
 
 import "react-toastify/dist/ReactToastify.css";
+import WalletConnection from "./wallet";
 
 function App() {
-  const getProvider = () => {
-    if ("phantom" in window) {
-      const provider = (window as any).phantom?.solana;
-
-      if (provider?.isPhantom) {
-        return provider;
-      }
-    }
-
-    window.open("https://phantom.app/", "_blank");
-  };
 
   const handleGame = async (demo) => {
     if (demo) {
       play(true);
       document.getElementById("landing").classList.add("hidden");
     } else {
-      const provider = getProvider(); // see "Detecting the Provider"
-      provider
-        .connect()
-        .then(({ publicKey }) => {
-          if (publicKey.toBase58()) {
-            play(false, publicKey.toBase58());
-            document.getElementById("landing").classList.add("hidden");
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-          toast.error("Please create wallet");
-        });
+      try {
+        const publicKey = await WalletConnection();
+        if (publicKey) {
+          play(false, publicKey.toBase58());
+          document.getElementById("landing").classList.add("hidden");
+        }
+      } catch (err) {
+        console.log(err);
+        toast.error("Please create wallet");
+      }
     }
   };
 
