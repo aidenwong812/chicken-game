@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@solana/wallet-adapter-phantom": "^0.9.24",
+    "@solana/web3.js": "^1.91.7",
     "axios": "^1.6.8",
     "cannon": "^0.6.2",
     "cannon-es": "^0.20.0",
